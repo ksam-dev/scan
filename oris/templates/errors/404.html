@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page non trouvée - ORIS</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-dark: #03624C;
+            --primary-medium: #2CC295;
+            --accent-green: #00DF82;
+            --background-light: #F8FBFF;
+            --background-dark: #042222;
+            --accent-mint: #FFE4D0;
+            --gradient-primary: linear-gradient(135deg, #03624C, #2CC295);
+            --gradient-secondary: linear-gradient(135deg, #F8FBFF, #FFE4D0);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gradient-secondary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+        
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .error-animation {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        
+        .error-number {
+            font-size: 8rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 1rem;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .error-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            color: var(--primary-medium);
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .error-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--background-dark);
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            font-size: 1.125rem;
+            color: #6c757d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .error-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .btn-oris-primary {
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            padding: 0.875rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .btn-oris-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-oris-outline {
+            background: transparent;
+            border: 2px solid var(--primary-medium);
+            color: var(--primary-medium);
+            padding: 0.875rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .btn-oris-outline:hover {
+            background: var(--primary-medium);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .floating-element {
+            position: absolute;
+            opacity: 0.1;
+            animation: floatAround 20s linear infinite;
+        }
+        
+        .floating-element:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .floating-element:nth-child(2) {
+            top: 20%;
+            right: 10%;
+            animation-delay: 5s;
+        }
+        
+        .floating-element:nth-child(3) {
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 10s;
+        }
+        
+        .floating-element:nth-child(4) {
+            bottom: 10%;
+            right: 20%;
+            animation-delay: 15s;
+        }
+        
+        .search-suggestion {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: var(--shadow-sm);
+            text-align: left;
+        }
+        
+        .search-suggestion h6 {
+            color: var(--background-dark);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .suggestion-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .suggestion-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .suggestion-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-list a {
+            color: var(--primary-medium);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .suggestion-list a:hover {
+            color: var(--primary-dark);
+            transform: translateX(5px);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+        
+        @keyframes floatAround {
+            0% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(90deg); }
+            50% { transform: translateY(0px) rotate(180deg); }
+            75% { transform: translateY(20px) rotate(270deg); }
+            100% { transform: translateY(0px) rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .error-number {
+                font-size: 6rem;
+            }
+            
+            .error-title {
+                font-size: 1.5rem;
+            }
+            
+            .error-message {
+                font-size: 1rem;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
+            
+            .btn-oris-primary,
+            .btn-oris-outline {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Éléments flottants décoratifs -->
+    <div class="floating-elements">
+        <div class="floating-element">
+            <i class="fas fa-file-alt fa-3x" style="color: var(--primary-medium);"></i>
+        </div>
+        <div class="floating-element">
+            <i class="fas fa-search fa-2x" style="color: var(--accent-green);"></i>
+        </div>
+        <div class="floating-element">
+            <i class="fas fa-cog fa-2x" style="color: var(--primary-dark);"></i>
+        </div>
+        <div class="floating-element">
+            <i class="fas fa-users fa-2x" style="color: var(--primary-medium);"></i>
+        </div>
+    </div>
+    
+    <div class="error-container">
+        <!-- Animation d'erreur -->
+        <div class="error-animation">
+            <div class="error-number">404</div>
+            <div class="error-icon">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
+        
+        <!-- Contenu de l'erreur -->
+        <h1 class="error-title">Page non trouvée</h1>
+        <p class="error-message">
+            Désolé, la page que vous recherchez n'existe pas ou a été déplacée. 
+            Elle a peut-être été supprimée, renommée ou est temporairement indisponible.
+        </p>
+        
+        <!-- Actions -->
+        <div class="error-actions">
+            <div class="d-flex flex-column flex-md-row gap-3">
+                <a href="/" class="btn-oris-primary">
+                    <i class="fas fa-home"></i>
+                    Retour à l'accueil
+                </a>
+                <button onclick="history.back()" class="btn-oris-outline">
+                    <i class="fas fa-arrow-left"></i>
+                    Page précédente
+                </button>
+            </div>
+        </div>
+        
+        <!-- Suggestions -->
+        <div class="search-suggestion">
+            <h6><i class="fas fa-lightbulb me-2"></i>Pages populaires</h6>
+            <ul class="suggestion-list">
+                <li>
+                    <a href="/dashboard/">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Tableau de bord
+                    </a>
+                </li>
+                <li>
+                    <a href="/batch/upload/">
+                        <i class="fas fa-upload"></i>
+                        Créer un nouveau lot
+                    </a>
+                </li>
+                <li>
+                    <a href="/batch/list/">
+                        <i class="fas fa-list"></i>
+                        Mes lots de documents
+                    </a>
+                </li>
+                <li>
+                    <a href="/validation/queue/">
+                        <i class="fas fa-check-circle"></i>
+                        File de validation
+                    </a>
+                </li>
+                <li>
+                    <a href="/profile/">
+                        <i class="fas fa-user"></i>
+                        Mon profil
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Animation d'entrée
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.error-container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(30px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.8s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        });
+        
+        // Effet de particules au clic
+        document.addEventListener('click', function(e) {
+            createParticle(e.clientX, e.clientY);
+        });
+        
+        function createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.width = '6px';
+            particle.style.height = '6px';
+            particle.style.background = 'var(--primary-medium)';
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '9999';
+            particle.style.animation = 'particleFloat 1s ease-out forwards';
+            
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, 1000);
+        }
+        
+        // Ajouter l'animation CSS pour les particules
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes particleFloat {
+                0% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translateY(-50px) scale(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
+

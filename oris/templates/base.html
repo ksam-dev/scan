@@ -1,0 +1,1222 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ORIS - Système OCR puissant pour la numérisation de documents">
+    <title>{% block title %}ORIS - Système OCR{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+    
+    <style>
+        :root {
+            /* Palette de couleurs ORIS */
+            --primary-dark: #03624C;      /* Vert foncé principal */
+            --primary-bright: #00DF82;    /* Vert vif */
+            --primary-medium: #2CC295;    /* Vert moyen */
+            --background-light: #F8FBFF;  /* Fond clair */
+            --background-dark: #042222;   /* Fond sombre */
+            --accent-peach: #FFE4D0;      /* Accent pêche */
+            --accent-mint: #AFF9C7;       /* Accent menthe (175, 249, 199) */
+            
+            /* Dégradés */
+            --gradient-primary: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 50%, var(--primary-bright) 100%);
+            --gradient-secondary: linear-gradient(135deg, var(--background-light) 0%, var(--accent-mint) 100%);
+            --gradient-accent: linear-gradient(45deg, var(--accent-peach) 0%, var(--accent-mint) 100%);
+            
+            /* Ombres */
+            --shadow-sm: 0 2px 4px rgba(3, 98, 76, 0.1);
+            --shadow-md: 0 4px 12px rgba(3, 98, 76, 0.15);
+            --shadow-lg: 0 8px 24px rgba(3, 98, 76, 0.2);
+            
+            /* Variables de mise en page */
+            --sidebar-width: 280px;
+            --top-navbar-height: 76px;
+            --border-radius: 12px;
+        }
+
+        /* ========== LOADER EN FORME D'ŒIL ========== */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 50%, var(--primary-bright) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            visibility: visible;
+            transition: all 0.5s ease;
+        }
+
+        .page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .eye-loader {
+            position: relative;
+            width: 120px;
+            height: 80px;
+        }
+
+        .eye-outer {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            animation: eyeBlink 3s infinite ease-in-out;
+        }
+
+        .eye-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: var(--primary-dark);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: eyeMove 2s infinite ease-in-out;
+        }
+
+        .eye-pupil {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: #000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: pupilMove 2s infinite ease-in-out;
+        }
+
+        .eye-shine {
+            position: absolute;
+            top: 30%;
+            left: 30%;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: shine 2s infinite ease-in-out;
+        }
+
+        .loader-text {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            animation: textPulse 1.5s infinite ease-in-out;
+        }
+
+        .loader-dots {
+            display: inline-block;
+            animation: dots 1.5s infinite;
+        }
+
+        /* Animations du loader */
+        @keyframes eyeBlink {
+            0%, 90%, 100% { 
+                transform: scaleY(1); 
+            }
+            95% { 
+                transform: scaleY(0.1); 
+            }
+        }
+
+        @keyframes eyeMove {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1); 
+            }
+            25% { 
+                transform: translate(-40%, -50%) scale(1.1); 
+            }
+            50% { 
+                transform: translate(-50%, -40%) scale(0.9); 
+            }
+            75% { 
+                transform: translate(-60%, -50%) scale(1.1); 
+            }
+        }
+
+        @keyframes pupilMove {
+            0%, 100% { 
+                transform: translate(-50%, -50%); 
+            }
+            25% { 
+                transform: translate(-30%, -50%); 
+            }
+            50% { 
+                transform: translate(-50%, -30%); 
+            }
+            75% { 
+                transform: translate(-70%, -50%); 
+            }
+        }
+
+        @keyframes shine {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1); 
+            }
+            50% { 
+                opacity: 0.7; 
+                transform: scale(1.2); 
+            }
+        }
+
+        @keyframes textPulse {
+            0%, 100% { 
+                opacity: 1; 
+            }
+            50% { 
+                opacity: 0.7; 
+            }
+        }
+
+        @keyframes dots {
+            0%, 20% { 
+                content: ''; 
+            }
+            40% { 
+                content: '.'; 
+            }
+            60% { 
+                content: '..'; 
+            }
+            80%, 100% { 
+                content: '...'; 
+            }
+        }
+
+        /* Styles de base */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-light);
+            color: #334155;
+            padding-top: var(--top-navbar-height);
+        }
+
+        /* Navbar */
+        .navbar-oris {
+            background: var(--gradient-primary);
+            height: var(--top-navbar-height);
+            box-shadow: var(--shadow-md);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+        }
+
+        .text-gradient {
+            background: linear-gradient(90deg, #fff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+        }
+
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: var(--top-navbar-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--top-navbar-height));
+            background: #fff;
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            transform: translateX(-100%);
+        }
+
+        @media (min-width: 992px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: var(--sidebar-width);
+            }
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem 0;
+        }
+
+        .sidebar-nav .nav-link {
+            color: #475569;
+            padding: 0.75rem 1.5rem;
+            margin-bottom: 0.1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-nav .nav-link:hover {
+            background-color: rgba(175, 249, 199, 0.2);
+            color: var(--primary-dark);
+        }
+
+        .sidebar-nav .nav-link.active {
+            background-color: rgba(175, 249, 199, 0.3);
+            color: var(--primary-dark);
+            border-left: 3px solid var(--primary-bright);
+        }
+
+        .sidebar-nav .nav-link i {
+            width: 20px;
+            margin-right: 12px;
+            color: var(--primary-medium);
+        }
+
+        /* Overlay pour mobile */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Contenu principal */
+        .main-content {
+            transition: all 0.3s ease;
+            padding: 1.5rem;
+            width: 100%;
+        }
+
+        @media (min-width: 992px) {
+            .main-content {
+                width: calc(100% - var(--sidebar-width));
+            }
+        }
+
+        /* Alertes personnalisées */
+        .alert {
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            border-left-color: var(--primary-bright);
+            background-color: rgba(175, 249, 199, 0.2);
+        }
+
+        .alert-info {
+            border-left-color: var(--primary-medium);
+            background-color: rgba(44, 194, 149, 0.1);
+        }
+
+        .alert-warning {
+            border-left-color: var(--accent-peach);
+            background-color: rgba(255, 228, 208, 0.3);
+        }
+
+        /* Cartes modernes */
+        .card {
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            border-bottom: 1px solid rgba(3, 98, 76, 0.1);
+            background: transparent;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Boutons modernes */
+        .btn {
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            padding: 0.5rem 1.25rem;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-dark) 50%, var(--primary-medium) 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            color: white;
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-dark);
+            border: 2px solid var(--primary-medium);
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
+            color: white;
+        }
+
+        /* Tableaux modernes */
+        .table {
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            background: rgba(175, 249, 199, 0.3);
+            padding: 1rem;
+            color: var(--primary-dark);
+        }
+
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        /* Stats cards */
+        .stat-card {
+            border-radius: var(--border-radius);
+            background: #fff;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-top: 4px solid;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: rgba(175, 249, 199, 0.3);
+            color: var(--primary-dark);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--primary-dark);
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Badges */
+        .badge {
+            border-radius: 20px;
+            padding: 0.5em 0.9em;
+            font-weight: 500;
+        }
+
+        .bg-success {
+            background-color: var(--primary-bright) !important;
+        }
+
+        .bg-primary {
+            background-color: var(--primary-medium) !important;
+        }
+
+        .bg-warning {
+            background-color: var(--accent-peach) !important;
+            color: #8a5300 !important;
+        }
+
+        /* Barre de recherche */
+        .search-form {
+            position: relative;
+        }
+
+        .search-form .form-control {
+            border-radius: 50px;
+            padding-left: 2.5rem;
+            border: 1px solid rgba(3, 98, 76, 0.2);
+        }
+
+        .search-form .form-control:focus {
+            border-color: var(--primary-medium);
+            box-shadow: 0 0 0 0.25rem rgba(3, 98, 76, 0.15);
+        }
+
+        .search-form .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-medium);
+        }
+
+        /* Avatar avec animation */
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            background: var(--gradient-primary);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar-emoji {
+            font-size: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Filtres responsive */
+        .filter-section {
+            background: rgba(175, 249, 199, 0.15);
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .filter-group {
+                min-width: 100%;
+            }
+            
+            .filter-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+            
+            .filter-actions .btn {
+                flex: 1;
+            }
+        }
+
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: var(--border-radius);
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(3, 98, 76, 0.2);
+        }
+
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(3, 98, 76, 0.15);
+            border-color: var(--primary-medium);
+        }
+
+        /* Pagination */
+        .pagination .page-link {
+            border-radius: var(--border-radius);
+            margin: 0 0.15rem;
+            border: 1px solid rgba(3, 98, 76, 0.2);
+            color: var(--primary-dark);
+        }
+
+        .pagination .page-link:hover {
+            background-color: rgba(175, 249, 199, 0.3);
+            border-color: var(--primary-medium);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--gradient-primary);
+            border-color: var(--primary-dark);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1199.98px) {
+            .stat-value {
+                font-size: 1.6rem;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .card-header, .card-body {
+                padding: 1rem;
+            }
+            
+            .table-responsive {
+                overflow-x: auto;
+            }
+            
+            .table th, .table td {
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .stat-card {
+                padding: 1.25rem;
+            }
+            
+            .stat-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .btn {
+                padding: 0.45rem 1rem;
+            }
+            
+            .navbar-nav .nav-link {
+                padding: 0.5rem 0.75rem;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .stat-value {
+                font-size: 1.4rem;
+            }
+            
+            .table th, .table td {
+                padding: 0.75rem 0.5rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .search-form .form-control {
+                padding-left: 2.25rem;
+            }
+        }
+
+        /* Animation de chargement */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .main-content > .container-fluid {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Loader en forme d'œil -->
+    <div class="page-loader" id="pageLoader">
+        <div class="eye-loader">
+            <div class="eye-outer">
+                <div class="eye-inner">
+                    <div class="eye-pupil">
+                        <div class="eye-shine"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="loader-text">
+                Chargement<span class="loader-dots"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation principale -->
+    <nav class="navbar navbar-expand-lg navbar-oris fixed-top">
+        <div class="container-fluid">
+            <!-- Logo et nom -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
+                <i class="fas fa-eye me-2"></i>
+                <span class="text-gradient">ORIS</span>
+            </a>
+            
+            <!-- Bouton toggle pour mobile -->
+            <button class="navbar-toggler" type="button" id="sidebarToggle">
+                <i class="fas fa-bars text-white"></i>
+            </button>
+            
+            <!-- Barre de recherche (visible sur desktop) -->
+            <form class="d-none d-md-flex mx-4 search-form" style="flex-grow: 1; max-width: 400px;">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search" class="form-control" placeholder="Rechercher...">
+            </form>
+            
+            <!-- Menu utilisateur -->
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                        <div class="user-avatar me-2">
+                            <span class="avatar-emoji">👨</span>
+                        </div>
+                        <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'profile' %}">
+                            <i class="fas fa-user me-2"></i>Profil
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'settings' %}">
+                            <i class="fas fa-cog me-2"></i>Paramètres
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}">
+                            <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                        </a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <!-- Overlay pour mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <div class="p-3">
+                <!-- Barre de recherche mobile -->
+                <form class="d-md-none mb-3 search-form">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="search" class="form-control" placeholder="Rechercher...">
+                </form>
+                
+                <h6 class="text-muted text-uppercase fw-bold mb-3">Navigation</h6>
+                <nav class="nav flex-column sidebar-nav">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'dashboard' %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Tableau de bord
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'batch_upload' %}active{% endif %}" 
+                       href="{% url 'batch_upload' %}">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Nouveau lot
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'batch_list' %}active{% endif %}" 
+                       href="{% url 'batch_list' %}">
+                        <i class="fas fa-layer-group"></i>
+                        Gestion des lots
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'validation_queue' %}active{% endif %}" 
+                       href="{% url 'validation_queue' %}">
+                        <i class="fas fa-check-circle"></i>
+                        File de validation
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'archive' %}active{% endif %}" 
+                       href="{% url 'archive' %}">
+                        <i class="fas fa-archive"></i>
+                        Archives
+                    </a>
+                </nav>
+                
+                {% if user.is_staff %}
+                <h6 class="text-muted text-uppercase fw-bold mb-3 mt-4">Administration</h6>
+                <nav class="nav flex-column sidebar-nav">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}" 
+                       href="{% url 'admin_users' %}">
+                        <i class="fas fa-users"></i>
+                        Utilisateurs
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'admin_organizations' %}active{% endif %}" 
+                       href="{% url 'admin_organizations' %}">
+                        <i class="fas fa-building"></i>
+                        Organisations
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'admin_api_keys' %}active{% endif %}" 
+                       href="{% url 'admin_api_keys' %}">
+                        <i class="fas fa-key"></i>
+                        Clés API
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'admin_settings' %}active{% endif %}" 
+                       href="{% url 'admin_settings' %}">
+                        <i class="fas fa-cogs"></i>
+                        Configuration
+                    </a>
+                </nav>
+                {% endif %}
+            </div>
+            
+            <!-- Menu utilisateur version mobile -->
+            <div class="mt-auto p-3 border-top">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar me-3">
+                        <span class="avatar-emoji">👨</span>
+                    </div>
+                    <div class="d-flex flex-column">
+                        <span class="fw-bold">{{ user.get_full_name|default:user.username }}</span>
+                        <div class="d-flex mt-2">
+                            <a href="{% url 'profile' %}" class="btn btn-sm btn-outline-primary me-2">
+                                <i class="fas fa-user"></i>
+                            </a>
+                            <a href="{% url 'settings' %}" class="btn btn-sm btn-outline-primary me-2">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                            <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenu principal -->
+    <main class="main-content">
+        <div class="container-fluid">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                            <div>{{ message }}</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block breadcrumb %}{% endblock %}
+            
+            {% block content %}
+            <!-- Exemple de contenu de dashboard -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Tableau de bord</h1>
+                <button class="btn btn-primary d-flex align-items-center">
+                    <i class="fas fa-plus me-2"></i> Nouveau document
+                </button>
+            </div>
+            
+            <!-- Filtres responsive -->
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label class="form-label">Type de document</label>
+                        <select class="form-select">
+                            <option>Tous les types</option>
+                            <option>Factures</option>
+                            <option>Contrats</option>
+                            <option>Devis</option>
+                            <option>Rapports</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Statut</label>
+                        <select class="form-select">
+                            <option>Tous les statuts</option>
+                            <option>Validé</option>
+                            <option>En attente</option>
+                            <option>Rejeté</option>
+                            <option>En traitement</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control">
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-primary">Appliquer</button>
+                        <button type="reset" class="btn btn-outline-primary">Réinitialiser</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="stat-card" style="border-top-color: var(--primary-dark);">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="stat-value">128</div>
+                        <div class="stat-label">Documents traités</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="stat-card" style="border-top-color: var(--primary-bright);">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-value">84</div>
+                        <div class="stat-label">Documents validés</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="stat-card" style="border-top-color: var(--accent-peach);">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-value">26</div>
+                        <div class="stat-label">En attente</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="stat-card" style="border-top-color: var(--primary-medium);">
+                        <div class="stat-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="stat-value">7</div>
+                        <div class="stat-label">Lots en cours</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>Activité récente</span>
+                            <a href="#" class="btn btn-sm btn-primary">Voir tout</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Document</th>
+                                            <th>Lot</th>
+                                            <th>Statut</th>
+                                            <th>Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Facture_2023_10.pdf</td>
+                                            <td>Lot #245</td>
+                                            <td><span class="badge bg-success">Validé</span></td>
+                                            <td>12 Oct 2023</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Contrat_Vente.docx</td>
+                                            <td>Lot #246</td>
+                                            <td><span class="badge bg-warning">En attente</span></td>
+                                            <td>11 Oct 2023</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Devis_Projet.pdf</td>
+                                            <td>Lot #244</td>
+                                            <td><span class="badge bg-success">Validé</span></td>
+                                            <td>10 Oct 2023</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Rapport_Mensuel.xlsx</td>
+                                            <td>Lot #243</td>
+                                            <td><span class="badge bg-primary">En cours</span></td>
+                                            <td>09 Oct 2023</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <span>Statistiques rapides</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Taux de validation</span>
+                                    <span class="fw-bold">84%</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" style="width: 84%; background: var(--gradient-primary);"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Précision OCR</span>
+                                    <span class="fw-bold">96%</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" style="width: 96%; background: var(--gradient-primary);"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Temps moyen</span>
+                                    <span class="fw-bold">2.3s</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" style="width: 77%; background: var(--gradient-primary);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <span>Actions rapides</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>Télécharger des documents
+                                </button>
+                                <button class="btn btn-outline-primary">
+                                    <i class="fas fa-download me-2"></i>Exporter les résultats
+                                </button>
+                                <button class="btn btn-outline-primary">
+                                    <i class="fas fa-chart-bar me-2"></i>Voir les rapports
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endblock %}
+        </div>
+    </main>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ========== GESTION DU LOADER ==========
+            const loader = document.getElementById('pageLoader');
+            
+            // Masquer le loader une fois que tout est chargé
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    loader.classList.add('hidden');
+                    // Supprimer complètement le loader du DOM après l'animation
+                    setTimeout(function() {
+                        loader.remove();
+                    }, 500);
+                }, 800); // Délai minimum pour voir l'animation
+            });
+            
+            // Afficher le loader lors des navigations (liens internes)
+            const internalLinks = document.querySelectorAll('a[href^="/"], a[href^="' + window.location.origin + '"]');
+            internalLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Ne pas afficher le loader pour les liens externes, les ancres, ou les dropdowns
+                    if (this.getAttribute('href').startsWith('#') || 
+                        this.getAttribute('data-bs-toggle') || 
+                        this.target === '_blank') {
+                        return;
+                    }
+                    
+                    // Recréer le loader s'il a été supprimé
+                    if (!document.getElementById('pageLoader')) {
+                        const newLoader = document.createElement('div');
+                        newLoader.id = 'pageLoader';
+                        newLoader.className = 'page-loader';
+                        newLoader.innerHTML = `
+                            <div class="eye-loader">
+                                <div class="eye-outer">
+                                    <div class="eye-inner">
+                                        <div class="eye-pupil">
+                                            <div class="eye-shine"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="loader-text">
+                                    Chargement<span class="loader-dots"></span>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(newLoader);
+                    } else {
+                        // Réafficher le loader existant
+                        document.getElementById('pageLoader').classList.remove('hidden');
+                    }
+                });
+            });
+            
+            // ========== GESTION DE LA SIDEBAR ==========
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            function toggleSidebar() {
+                sidebar.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            }
+            
+            // Toggle sidebar
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            
+            // Fermer sidebar en cliquant sur l'overlay
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+            
+            // Fermer la sidebar quand on clique sur un lien (mobile)
+            const sidebarLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 992) {
+                        toggleSidebar();
+                    }
+                });
+            });
+            
+            // Ajuster la hauteur du contenu principal
+            function adjustMainContentHeight() {
+                const navbarHeight = document.querySelector('.navbar').offsetHeight;
+                document.body.style.paddingTop = navbarHeight + 'px';
+            }
+            
+            window.addEventListener('resize', adjustMainContentHeight);
+            adjustMainContentHeight();
+            
+            // Animation de l'emoji de l'avatar
+            const avatarEmojis = document.querySelectorAll('.avatar-emoji');
+            avatarEmojis.forEach(emoji => {
+                setInterval(() => {
+                    emoji.style.animation = 'none';
+                    setTimeout(() => {
+                        emoji.style.animation = 'pulse 2s infinite';
+                    }, 10);
+                }, 4000);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

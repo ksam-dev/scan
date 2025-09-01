@@ -1,0 +1,573 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des lots - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filters-card {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .batch-card {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .batch-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .batch-card.status-processing {
+        border-left-color: var(--primary-bright);
+    }
+    
+    .batch-card.status-completed {
+        border-left-color: #198754;
+    }
+    
+    .batch-card.status-pending {
+        border-left-color: #ffc107;
+    }
+    
+    .batch-card.status-error {
+        border-left-color: #dc3545;
+    }
+    
+    .batch-header {
+        display: flex;
+        justify-content: between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .batch-title {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .batch-meta {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    
+    .batch-stats {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 500;
+    }
+    
+    .batch-progress {
+        margin-bottom: 1rem;
+    }
+    
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-fill.processing {
+        background: var(--gradient-primary);
+    }
+    
+    .progress-fill.completed {
+        background: linear-gradient(135deg, #198754, #20c997);
+    }
+    
+    .progress-fill.error {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+    }
+    
+    .batch-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    .action-btn.primary {
+        background: var(--primary-medium);
+        color: white;
+    }
+    
+    .action-btn.primary:hover {
+        background: var(--primary-dark);
+        color: white;
+    }
+    
+    .action-btn.secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .action-btn.secondary:hover {
+        background: #495057;
+        color: white;
+    }
+    
+    .action-btn.danger {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.danger:hover {
+        background: #c82333;
+        color: white;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-processing {
+        background: rgba(0, 223, 130, 0.2);
+        color: var(--primary-dark);
+    }
+    
+    .status-completed {
+        background: rgba(25, 135, 84, 0.2);
+        color: #198754;
+    }
+    
+    .status-pending {
+        background: rgba(255, 193, 7, 0.2);
+        color: #b45309;
+    }
+    
+    .status-error {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-medium);
+        opacity: 0.5;
+    }
+    
+    .pagination-custom {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .pagination-custom .page-link {
+        border: none;
+        color: var(--primary-dark);
+        padding: 0.75rem 1rem;
+        margin: 0 0.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination-custom .page-link:hover {
+        background: var(--accent-mint);
+        color: var(--primary-dark);
+    }
+    
+    .pagination-custom .page-item.active .page-link {
+        background: var(--primary-medium);
+        color: white;
+    }
+    
+    @media (max-width: 768px) {
+        .batch-stats {
+            gap: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 1.25rem;
+        }
+        
+        .batch-actions {
+            justify-content: center;
+        }
+        
+        .action-btn {
+            flex: 1;
+            justify-content: center;
+            min-width: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-layer-group me-1"></i>Gestion des lots
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold text-gradient mb-1">Gestion des lots</h1>
+                    <p class="text-muted mb-0">Suivez et gérez tous vos lots de documents</p>
+                </div>
+                <div>
+                    <a href="{% url 'batch_upload' %}" class="btn btn-oris-primary">
+                        <i class="fas fa-plus me-2"></i>Nouveau lot
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtres et recherche -->
+    <div class="filters-card">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="search" class="form-label-oris">Recherche</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control form-control-oris" id="search" 
+                           name="search" placeholder="Nom du lot, client..." value="{{ request.GET.search }}">
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="status" class="form-label-oris">Statut</label>
+                <select class="form-select form-control-oris" id="status" name="status">
+                    <option value="">Tous les statuts</option>
+                    <option value="processing" {% if request.GET.status == 'processing' %}selected{% endif %}>En cours</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Terminé</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>En attente</option>
+                    <option value="error" {% if request.GET.status == 'error' %}selected{% endif %}>Erreur</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="document_type" class="form-label-oris">Type</label>
+                <select class="form-select form-control-oris" id="document_type" name="document_type">
+                    <option value="">Tous les types</option>
+                    <option value="invoice" {% if request.GET.document_type == 'invoice' %}selected{% endif %}>Factures</option>
+                    <option value="contract" {% if request.GET.document_type == 'contract' %}selected{% endif %}>Contrats</option>
+                    <option value="receipt" {% if request.GET.document_type == 'receipt' %}selected{% endif %}>Reçus</option>
+                    <option value="form" {% if request.GET.document_type == 'form' %}selected{% endif %}>Formulaires</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="date_from" class="form-label-oris">Date de</label>
+                <input type="date" class="form-control form-control-oris" id="date_from" 
+                       name="date_from" value="{{ request.GET.date_from }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="date_to" class="form-label-oris">Date à</label>
+                <input type="date" class="form-control form-control-oris" id="date_to" 
+                       name="date_to" value="{{ request.GET.date_to }}">
+            </div>
+            
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-oris-primary w-100">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Liste des lots -->
+   <div class="row">
+        <div class="col-12">
+            {% if batches_with_stats %}
+                <!-- CORRECTION : Itérer sur la nouvelle structure -->
+                {% for data in batches_with_stats %}
+                {% with batch=data.object %} {# Créer un alias pour la lisibilité #}
+                <div class="batch-card status-{{ batch.status }}">
+                    <div class="batch-header">
+                        <div class="flex-grow-1">
+                            <h5 class="batch-title">{{ batch.name }}</h5>
+                            <div class="batch-meta">
+                                <i class="fas fa-user me-1"></i>{{ batch.client|default:"Aucun client" }} • 
+                                <i class="fas fa-calendar me-1"></i>{{ batch.created_at|date:"d/m/Y H:i" }} • 
+                                <i class="fas fa-file-alt me-1"></i>{{ batch.document_type|capfirst }}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="status-badge status-{{ batch.status }}">
+                                {% if batch.status == 'processing' %}
+                                    <i class="fas fa-cog fa-spin me-1"></i>En cours
+                                {% elif batch.status == 'completed' %}
+                                    <i class="fas fa-check me-1"></i>Terminé
+                                {% elif batch.status == 'pending' %}
+                                    <i class="fas fa-clock me-1"></i>En attente
+                                {% elif batch.status == 'error' %}
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Erreur
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="batch-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ batch.total_documents|default:0 }}</div>
+                            <div class="stat-label">Documents</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ batch.processed_documents|default:0 }}</div>
+                            <div class="stat-label">Traités</div>
+                        </div>
+                        <div class="stat-item">
+                            <!-- CORRECTION : Utiliser la variable du dictionnaire -->
+                            <div class="stat-number">{{ data.validated_documents_count|default:0 }}</div>
+                            <div class="stat-label">Validés</div>
+                        </div>
+                        <div class="stat-item">
+                            <!-- CORRECTION : Utiliser la variable du dictionnaire -->
+                            <div class="stat-number">{{ data.average_accuracy|floatformat:2|default:0 }}%</div>
+                            <div class="stat-label">Précision</div>
+                        </div>
+                    </div>
+
+                    <div class="batch-progress">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Progression</small>
+                            <!-- CORRECTION : Utiliser la variable du dictionnaire -->
+                            <small class="fw-semibold">{{ data.progress_percentage|floatformat:0|default:0 }}%</small>
+                        </div>
+                        <div class="progress-bar-custom">
+                            <!-- CORRECTION : Utiliser la variable du dictionnaire -->
+                            <div class="progress-fill {{ batch.status }}" 
+                                style="width: {{ data.progress_percentage|default:0 }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="batch-actions">
+                        <a href="{% url 'batch_detail' batch.id %}" class="action-btn primary">
+                            <i class="fas fa-eye"></i>Détails
+                        </a>
+                        
+                        {% if batch.status == 'completed' %}
+                        <a href="{% url 'batch_export' batch.id %}" class="action-btn secondary">
+                            <i class="fas fa-download"></i>Export CSV
+                        </a>
+                        {% endif %}
+                        
+                        {% if batch.status == 'error' or batch.status == 'pending' %}
+                        <button class="action-btn primary" onclick="reprocessBatch('{{ batch.id }}')">
+                            <i class="fas fa-redo"></i>Retraiter
+                        </button>
+                        {% endif %}
+                        
+                        <!-- CORRECTION : Utiliser la variable du dictionnaire -->
+                        {% if data.pending_validation_count > 0 %}
+                        <a href="{% url 'validation_queue' %}?batch={{ batch.id }}" class="action-btn primary">
+                            <i class="fas fa-check-circle"></i>Valider ({{ data.pending_validation_count }})
+                        </a>
+                        {% endif %}
+                        
+                        <button class="action-btn danger" onclick="deleteBatch('{{ batch.id }}', '{{ batch.name|escapejs }}')">
+                            <i class="fas fa-trash"></i>Supprimer
+                        </button>
+                    </div>
+                </div>
+                {% endwith %}
+                {% endfor %}
+
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <div class="pagination-custom">
+                    <nav>
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-layer-group"></i>
+                    <h4 class="fw-bold mb-3">Aucun lot trouvé</h4>
+                    <p class="mb-4">Commencez par créer votre premier lot de documents à traiter.</p>
+                    <a href="{% url 'batch_upload' %}" class="btn btn-oris-primary">
+                        <i class="fas fa-plus me-2"></i>Créer un lot
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function reprocessBatch(batchId) {
+        if (confirm('Êtes-vous sûr de vouloir retraiter ce lot ?')) {
+            // HTMX request pour retraiter le lot
+            fetch(`/batch/${batchId}/reprocess/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification('Retraitement lancé avec succès', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    ORIS.showNotification('Erreur lors du retraitement', 'error');
+                }
+            })
+            .catch(error => {
+                ORIS.showNotification('Erreur lors du retraitement', 'error');
+            });
+        }
+    }
+    
+    function deleteBatch(batchId, batchName) {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer le lot "${batchName}" ? Cette action est irréversible.`)) {
+            fetch(`/batch/${batchId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification('Lot supprimé avec succès', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    ORIS.showNotification('Erreur lors de la suppression', 'error');
+                }
+            })
+            .catch(error => {
+                ORIS.showNotification('Erreur lors de la suppression', 'error');
+            });
+        }
+    }
+    
+    // Auto-refresh pour les lots en cours de traitement
+    const processingBatches = document.querySelectorAll('.batch-card.status-processing');
+    if (processingBatches.length > 0) {
+        setInterval(() => {
+            location.reload();
+        }, 30000); // Refresh toutes les 30 secondes
+    }
+</script>
+{% endblock %}
+

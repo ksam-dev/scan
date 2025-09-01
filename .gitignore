@@ -1,0 +1,16 @@
+# Fichiers de l'environnement virtuel
+myenv/
+venv/
+
+# Fichiers de cache Python
+__pycache__/
+*.pyc
+
+# Base de données de développement
+db.sqlite3
+
+# Fichiers media (on les gérera sur le serveur)
+/media/
+
+# Fichiers de configuration locaux
+.env

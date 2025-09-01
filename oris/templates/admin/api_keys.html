@@ -1,0 +1,675 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Clés API - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .stat-card.total { border-left-color: var(--primary-medium); }
+    .stat-card.active { border-left-color: #198754; }
+    .stat-card.inactive { border-left-color: #6c757d; }
+    .stat-card.admins { border-left-color: #e83e8c; }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.25rem;
+        color: white;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .api-keys-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        background: var(--gradient-secondary);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .api-key-card {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .api-key-card:hover {
+        background: var(--accent-mint);
+    }
+    
+    .api-key-card:last-child {
+        border-bottom: none;
+    }
+    
+    .api-key-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .api-key-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    
+    .api-key-details {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .api-key-name {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .api-key-value {
+        font-family: 'Courier New', Courier, monospace;
+        background-color: #e9ecef;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        color: #495057;
+        word-break: break-all;
+    }
+    
+    .api-key-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+    
+    .api-key-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-active {
+        background: rgba(25, 135, 84, 0.2);
+        color: #198754;
+    }
+    
+    .status-inactive {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+    }
+    
+    .api-key-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+    }
+    
+    .action-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .action-btn.edit {
+        background: var(--primary-medium);
+        color: white;
+    }
+    
+    .action-btn.edit:hover {
+        background: var(--primary-dark);
+    }
+    
+    .action-btn.delete {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.delete:hover {
+        background: #c82333;
+    }
+    
+    .action-btn.toggle {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .action-btn.toggle:hover {
+        background: #495057;
+    }
+    
+    .filters-bar {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .search-box {
+        position: relative;
+        max-width: 300px;
+    }
+    
+    .search-box input {
+        padding-left: 2.5rem;
+    }
+    
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    
+    .api-key-modal .modal-content {
+        border-radius: 1.5rem;
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .api-key-modal .modal-header {
+        background: var(--gradient-secondary);
+        border-bottom: 1px solid #e9ecef;
+        border-radius: 1.5rem 1.5rem 0 0;
+    }
+    
+    @media (max-width: 768px) {
+        .api-key-info {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+        
+        .api-key-meta {
+            justify-content: center;
+        }
+        
+        .api-key-actions {
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .filters-bar {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'admin_settings' %}" class="text-decoration-none">
+                <i class="fas fa-cogs me-1"></i>Administration
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-key me-1"></i>Clés API
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="admin-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 fw-bold text-gradient mb-1">Gestion des Clés API</h1>
+                <p class="text-muted mb-0">Générez et gérez les clés d'accès pour les intégrations externes</p>
+            </div>
+            <div>
+                <button class="btn btn-oris-primary" data-bs-toggle="modal" data-bs-target="#apiKeyModal">
+                    <i class="fas fa-plus me-2"></i>Nouvelle clé API
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card total">
+            <div class="stat-icon" style="background: var(--gradient-primary);">
+                <i class="fas fa-key"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_keys|default:0 }}</div>
+            <div class="stat-label">Clés API total</div>
+        </div>
+        
+        <div class="stat-card active">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #198754, #20c997);">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-number">{{ stats.active_keys|default:0 }}</div>
+            <div class="stat-label">Actives</div>
+        </div>
+        
+        <div class="stat-card inactive">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #6c757d, #adb5bd);">
+                <i class="fas fa-minus-circle"></i>
+            </div>
+            <div class="stat-number">{{ stats.inactive_keys|default:0 }}</div>
+            <div class="stat-label">Inactives</div>
+        </div>
+        
+        <div class="stat-card admins">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #e83e8c, #fd7e14);">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_requests|default:0 }}</div>
+            <div class="stat-label">Requêtes (30j)</div>
+        </div>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filters-bar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <div class="search-box">
+                <input type="text" class="form-control form-control-oris" 
+                       placeholder="Rechercher une clé..." id="keySearch">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            
+            <select class="form-select form-control-oris" id="statusFilter" style="width: auto;">
+                <option value="">Tous les statuts</option>
+                <option value="active">Actives</option>
+                <option value="inactive">Inactives</option>
+            </select>
+            
+            <select class="form-select form-control-oris" id="userFilter" style="width: auto;">
+                <option value="">Tous les utilisateurs</option>
+                {% for user in users %}
+                <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-oris-outline btn-sm" onclick="exportApiKeys()">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+        </div>
+    </div>
+    
+    <!-- Liste des clés API -->
+    <div class="api-keys-panel">
+        <div class="panel-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    Clés API
+                    <span class="badge bg-primary ms-2" id="keyCount">{{ api_keys.count }}</span>
+                </h5>
+                
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="sortApiKeys('name')">
+                        <i class="fas fa-sort-alpha-down me-1"></i>Nom
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="sortApiKeys('date')">
+                        <i class="fas fa-calendar me-1"></i>Date
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="sortApiKeys('requests')">
+                        <i class="fas fa-exchange-alt me-1"></i>Requêtes
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="apiKeysList">
+            {% for key in api_keys %}
+            <div class="api-key-card" data-key-id="{{ key.id }}">
+                <div class="api-key-info">
+                    <div class="api-key-icon">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    
+                    <div class="api-key-details">
+                        <div class="api-key-name">
+                            {{ key.name }}
+                        </div>
+                        
+                        <div class="api-key-value">
+                            {{ key.key_value }}
+                        </div>
+                        
+                        <div class="api-key-meta">
+                            <span>
+                                <i class="fas fa-user me-1"></i>
+                                Créée par: {{ key.created_by.get_full_name|default:key.created_by.username }}
+                            </span>
+                            <span>
+                                <i class="fas fa-calendar me-1"></i>
+                                Créée le: {{ key.created_at|date:"d/m/Y" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-exchange-alt me-1"></i>
+                                {{ key.request_count }} requêtes
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        <span class="api-key-status status-{% if key.is_active %}active{% else %}inactive{% endif %}">
+                            {% if key.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                        
+                        <div class="api-key-actions">
+                            <button class="action-btn edit" onclick="editApiKey({{ key.id }})" 
+                                    title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            
+                            <button class="action-btn toggle" 
+                                    onclick="toggleApiKeyStatus({{ key.id }}, {{ key.is_active|yesno:'false,true' }})"
+                                    title="{% if key.is_active %}Désactiver{% else %}Activer{% endif %}">
+                                <i class="fas fa-{% if key.is_active %}pause{% else %}play{% endif %}"></i>
+                            </button>
+                            
+                            <button class="action-btn delete" onclick="deleteApiKey({{ key.id }}, '{{ key.name }}')"
+                                    title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center p-5">
+                <i class="fas fa-key fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucune clé API trouvée</h5>
+                <p class="text-muted">Générez votre première clé API pour commencer les intégrations.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Clé API -->
+<div class="modal fade api-key-modal" id="apiKeyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-plus me-2 text-primary"></i>
+                    <span id="modalTitle">Nouvelle Clé API</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="apiKeyForm">
+                    <input type="hidden" id="apiKeyId" name="api_key_id">
+                    
+                    <div class="mb-3">
+                        <label for="keyName" class="form-label-oris">Nom de la clé *</label>
+                        <input type="text" class="form-control form-control-oris" 
+                               id="keyName" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="keyUser" class="form-label-oris">Utilisateur associé</label>
+                        <select class="form-select form-control-oris" id="keyUser" name="user_id">
+                            <option value="">Aucun</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="keyPermissions" class="form-label-oris">Permissions</label>
+                        <textarea class="form-control form-control-oris" id="keyPermissions" name="permissions" rows="3"
+                                  placeholder="Ex: read:documents, write:batches"></textarea>
+                        <small class="form-text text-muted">Liste des permissions séparées par des virgules.</small>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                        <label class="form-check-label" for="isActive">
+                            Clé API active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-oris-outline" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-oris-primary" onclick="saveApiKey()">
+                    <i class="fas fa-save me-2"></i>Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Recherche en temps réel
+    document.getElementById('keySearch').addEventListener('input', function() {
+        filterApiKeys();
+    });
+    
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        filterApiKeys();
+    });
+    
+    document.getElementById('userFilter').addEventListener('change', function() {
+        filterApiKeys();
+    });
+    
+    function filterApiKeys() {
+        const search = document.getElementById('keySearch').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const userFilter = document.getElementById('userFilter').value;
+        
+        const apiKeyCards = document.querySelectorAll('.api-key-card');
+        let visibleCount = 0;
+        
+        apiKeyCards.forEach(card => {
+            const keyName = card.querySelector('.api-key-name').textContent.toLowerCase();
+            const keyUser = card.querySelector('.api-key-meta span:nth-child(1)').textContent.toLowerCase(); // Assuming user is first meta span
+            const keyStatus = card.querySelector('.api-key-status').classList.contains('status-active') ? 'active' : 'inactive';
+            
+            const matchesSearch = keyName.includes(search) || keyUser.includes(search);
+            const matchesStatus = !statusFilter || keyStatus === statusFilter;
+            const matchesUser = !userFilter || keyUser.includes(userFilter);
+            
+            if (matchesSearch && matchesStatus && matchesUser) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('keyCount').textContent = visibleCount;
+    }
+    
+    // Gestion des clés API
+    function editApiKey(keyId) {
+        fetch(`/admin-panel/api-keys/${keyId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const key = data.api_key;
+                
+                document.getElementById('modalTitle').textContent = 'Modifier la Clé API';
+                document.getElementById('apiKeyId').value = key.id;
+                document.getElementById('keyName').value = key.name;
+                document.getElementById('keyUser').value = key.user_id || '';
+                document.getElementById('keyPermissions').value = key.permissions.join(', ');
+                document.getElementById('isActive').checked = key.is_active;
+                
+                new bootstrap.Modal(document.getElementById('apiKeyModal')).show();
+            }
+        });
+    }
+    
+    function saveApiKey() {
+        const form = document.getElementById('apiKeyForm');
+        const formData = new FormData(form);
+        const keyId = document.getElementById('apiKeyId').value;
+        
+        const url = keyId ? `/admin-panel/api-keys/${keyId}/update/` : '/admin-panel/api-keys/create/';
+        const method = keyId ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification(keyId ? 'Clé API modifiée' : 'Clé API créée', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('apiKeyModal')).hide();
+                location.reload();
+            } else {
+                ORIS.showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+            }
+        });
+    }
+    
+    function toggleApiKeyStatus(keyId, activate) {
+        const action = activate ? 'activer' : 'désactiver';
+        
+        if (confirm(`Êtes-vous sûr de vouloir ${action} cette clé API ?`)) {
+            fetch(`/admin-panel/api-keys/${keyId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    is_active: activate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification(`Clé API ${activate ? 'activée' : 'désactivée'}`, 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors de la modification', 'error');
+                }
+            });
+        }
+    }
+    
+    function deleteApiKey(keyId, keyName) {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer la clé API "${keyName}" ? Cette action est irréversible.`)) {
+            fetch(`/admin-panel/api-keys/${keyId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification('Clé API supprimée', 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors de la suppression', 'error');
+                }
+            });
+        }
+    }
+    
+    function sortApiKeys(criteria) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort', criteria);
+        window.location = url;
+    }
+    
+    function exportApiKeys() {
+        window.open('/admin-panel/api-keys/export/', '_blank');
+    }
+    
+    // Réinitialiser le modal à la fermeture
+    document.getElementById('apiKeyModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('apiKeyForm').reset();
+        document.getElementById('modalTitle').textContent = 'Nouvelle Clé API';
+        document.getElementById('apiKeyId').value = '';
+    });
+</script>
+{% endblock %}
+

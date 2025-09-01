@@ -1,0 +1,570 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Document: {{ document.original_filename }} - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .document-viewer {
+        height: calc(100vh - 120px); /* Hauteur ajustée pour la page */
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .viewer-header {
+        background: var(--gradient-secondary);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+        flex-shrink: 0;
+    }
+    
+    .viewer-content {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+    }
+    
+    .image-panel {
+        flex: 1;
+        background: #f0f2f5;
+        position: relative;
+        overflow: hidden;
+        border-right: 1px solid #e9ecef;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .text-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
+    
+    .document-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        cursor: grab;
+        transition: transform 0.2s ease-out;
+    }
+    
+    .document-image:active {
+        cursor: grabbing;
+    }
+    
+    .image-controls {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        z-index: 10;
+    }
+    
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--primary-dark);
+    }
+    
+    .control-btn:hover {
+        background: white;
+        transform: scale(1.1);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .text-editor {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+    }
+    
+    .editor-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .confidence-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .confidence-bar {
+        width: 100px;
+        height: 6px;
+        background: #e9ecef;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    
+    .confidence-high { background: #198754; }
+    .confidence-medium { background: #ffc107; }
+    .confidence-low { background: #dc3545; }
+    
+    .ocr-text {
+        flex: 1;
+        border: 2px solid #e9ecef;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        resize: none;
+        background: #fdfdff;
+        transition: all 0.3s ease;
+    }
+    
+    .ocr-text:focus {
+        outline: none;
+        border-color: var(--primary-medium);
+        box-shadow: 0 0 0 0.2rem rgba(44, 194, 149, 0.25);
+    }
+    
+    .ocr-text.modified {
+        border-color: var(--primary-bright);
+        background: rgba(0, 223, 130, 0.05);
+    }
+    
+    .action-bar {
+        background: var(--gradient-secondary);
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .document-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .document-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .page-navigation {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: white;
+        padding: 0.5rem;
+        border-radius: 50px;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .page-btn {
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 50%;
+        background: var(--primary-medium);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .page-btn:hover:not(:disabled) {
+        background: var(--primary-dark);
+        transform: scale(1.1);
+    }
+    
+    .page-btn:disabled {
+        background: #adb5bd;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    
+    .page-info {
+        font-weight: 600;
+        color: var(--primary-dark);
+        min-width: 120px;
+        text-align: center;
+    }
+
+    .doc-page-nav {
+        position: absolute;
+        bottom: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 0.5rem;
+        border-radius: 50px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Tableau de bord</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'batch_list' %}">Gestion des lots</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'batch_detail' document.batch.id %}">{{ document.batch.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ document.original_filename }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="document-viewer">
+        <!-- En-tête du viewer -->
+        <div class="viewer-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="fw-bold mb-1">{{ document.original_filename }}</h4>
+                    <div class="text-muted small">
+                        <i class="fas fa-layer-group me-1"></i>{{ document.batch.name }}
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Navigation entre documents -->
+                    <div class="page-navigation">
+                        <a href="{% if prev_document %}{% url 'document_view' prev_document.id %}{% else %}#{% endif %}" class="page-btn" id="prevDocBtn" {% if not prev_document %}disabled{% endif %} title="Document précédent (Flèche gauche)">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <div class="page-info">
+                            Doc {{ current_index }} / {{ total_documents }}
+                        </div>
+                        <a href="{% if next_document %}{% url 'document_view' next_document.id %}{% else %}#{% endif %}" class="page-btn" id="nextDocBtn" {% if not next_document %}disabled{% endif %} title="Document suivant (Flèche droite)">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                    <!-- Indicateur de confiance moyen -->
+                    <div class="confidence-indicator" title="Confiance moyenne pour ce document">
+                        <span class="text-muted">Confiance Moy:</span>
+                        <div class="confidence-bar">
+                            <div id="avgConfidenceFill" class="confidence-fill" style="width: {{ average_confidence|default:0 }}%"></div>
+                        </div>
+                        <span id="avgConfidenceText" class="fw-semibold">{{ average_confidence|floatformat:0 }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contenu principal -->
+        <div class="viewer-content" id="viewerContent">
+            <!-- Panneau image -->
+            <div class="image-panel" id="imagePanel">
+                <div class="image-controls">
+                    <button class="control-btn" onclick="zoomIn()" title="Zoom avant"><i class="fas fa-search-plus"></i></button>
+                    <button class="control-btn" onclick="zoomOut()" title="Zoom arrière"><i class="fas fa-search-minus"></i></button>
+                    <button class="control-btn" onclick="resetZoom()" title="Taille réelle"><i class="fas fa-expand-arrows-alt"></i></button>
+                    <button class="control-btn" onclick="rotateImage()" title="Rotation"><i class="fas fa-redo"></i></button>
+                    <button class="control-btn" onclick="toggleFullscreen()" title="Plein écran"><i class="fas fa-expand"></i></button>
+    
+                </div>
+                
+                <img src="" alt="Image du document" class="document-image" id="documentImage">
+                
+                <div class="doc-page-nav" id="docPageNav" style="display: none;">
+                    <button class="page-btn" id="prevPageBtn" onclick="changePage(-1)" title="Page précédente"><i class="fas fa-arrow-left"></i></button>
+                    <div class="page-info" id="pageIndicator">Page 1 / 1</div>
+                    <button class="page-btn" id="nextPageBtn" onclick="changePage(1)" title="Page suivante"><i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+            
+            <!-- Panneau texte -->
+            <div class="text-panel" id="textPanel">
+                <div class="text-editor">
+                    <div class="editor-toolbar">
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="highlightLowConfidence()">
+                                <i class="fas fa-highlighter me-1"></i>Surligner
+                            </button>
+                        </div>
+                        <!-- NOUVELLE ZONE D'AFFICHAGE STRUCTURÉ -->
+                        <div class="ocr-text" id="ocrContent" contenteditable="true" style="white-space: pre-wrap;">
+                            {% with ocr_result=document.pages.first.ocr_results.first %}
+                                {% if ocr_result and ocr_result.extracted_fields.elements %}
+                                    {% for element in ocr_result.extracted_fields.elements %}
+                                        {% if element.type == 'Title' %}
+                                            <h4 class="my-3">{{ element.text }}</h4>
+                                        {% elif element.type == 'NarrativeText' %}
+                                            <p>{{ element.text }}</p>
+                                        {% elif element.type == 'ListItem' %}
+                                            <ul><li>{{ element.text }}</li></ul>
+                                        {% elif element.type == 'Table' %}
+                                            <div class="table-responsive my-3">
+                                                <p><strong>Tableau Détecté (Page {{ element.metadata.page_number }})</strong></p>
+                                                {{ element.html_table|safe }}
+                                            </div>
+                                        {% elif element.type == 'Image' %}
+                                            <div class="my-3 p-3 border rounded text-center">
+                                                <i class="fas fa-image fa-2x text-muted"></i>
+                                                <p class="text-muted mt-2">[Image Détectée]</p>
+                                            </div>
+                                        {% else %}
+                                            <p>{{ element.text }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <p>{{ ocr_result.raw_text|linebreaksbr }}</p>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="text-muted small">Caractères: <span id="charCount">0</span></span>
+                            <span class="text-muted small">Mots: <span id="wordCount">0</span></span>
+                        </div>
+                    </div>
+                    <textarea class="ocr-text" id="ocrText" placeholder="Chargement du texte OCR..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Barre d'actions -->
+        <div class="action-bar">
+            <div class="document-info">
+                <span><i class="fas fa-file-alt me-1"></i>{{ document.original_filename }}</span>
+                <span><i class="fas fa-weight me-1"></i>{{ document.file_size|filesizeformat }}</span>
+                <span><i class="fas fa-image me-1"></i>{{ document.total_pages }} page{{ document.total_pages|pluralize }}</span>
+            </div>
+            
+            <div class="document-actions">
+                <button class="btn btn-success" onclick="validateDocument()" id="validateBtn" title="Valider et passer au suivant (Ctrl+Entrée)">
+                    <i class="fas fa-check me-2"></i>Valider
+                </button>
+                <button class="btn btn-warning" onclick="flagForReview()">
+                    <i class="fas fa-flag me-2"></i>Signaler
+                </button>
+                <button class="btn btn-primary" onclick="saveChanges()" id="saveBtn" disabled title="Sauvegarder les modifications (Ctrl+S)">
+                    <i class="fas fa-save me-2"></i>Sauvegarder
+                </button>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="reprocessDocument()"><i class="fas fa-redo me-2"></i>Retraiter OCR</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteDocument()"><i class="fas fa-trash me-2"></i>Supprimer</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Passer les données des pages au JavaScript -->
+{{ pages_data_json|json_script:"pages-data" }}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- VARIABLES GLOBALES INITIALISÉES APRÈS LE CHARGEMENT DU DOM ---
+    const pagesData = JSON.parse(document.getElementById('pages-data').textContent);
+    let currentPageIndex = 0;
+    let originalTexts = pagesData.map(p => p.ocr_text);
+    
+    let currentZoom = 1;
+    let currentRotation = 0;
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+
+    // --- ÉLÉMENTS DU DOM ---
+    const documentViewer = document.querySelector('.document-viewer');
+    const documentImage = document.getElementById('documentImage');
+    const ocrText = document.getElementById('ocrText');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const docPageNav = document.getElementById('docPageNav');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const charCountEl = document.getElementById('charCount');
+    const wordCountEl = document.getElementById('wordCount');
+    const avgConfidenceFill = document.getElementById('avgConfidenceFill');
+    const prevDocBtn = document.getElementById('prevDocBtn');
+    const nextDocBtn = document.getElementById('nextDocBtn');
+
+    // --- LOGIQUE DE LA PAGE ---
+    function loadPage(index) {
+        if (index < 0 || index >= pagesData.length) return;
+
+        currentPageIndex = index;
+        const page = pagesData[index];
+
+        documentImage.src = page.image_url;
+        ocrText.value = page.ocr_text;
+        
+        pageIndicator.textContent = `Page ${page.page_number} / ${pagesData.length}`;
+        prevPageBtn.disabled = (index === 0);
+        nextPageBtn.disabled = (index === pagesData.length - 1);
+        
+        originalTexts[currentPageIndex] = ocrText.value;
+        checkIfModified();
+        updateTextStats();
+        resetZoom();
+    }
+
+    function changePage(direction) {
+        const newIndex = currentPageIndex + direction;
+        if (isModified()) {
+            if (confirm('Vous avez des modifications non sauvegardées sur cette page. Continuer sans sauvegarder ?')) {
+                loadPage(newIndex);
+            }
+        } else {
+            loadPage(newIndex);
+        }
+    }
+
+    function isModified() {
+        if (currentPageIndex >= originalTexts.length) return false;
+        return ocrText.value !== originalTexts[currentPageIndex];
+    }
+
+    function checkIfModified() {
+        const modified = isModified();
+        saveBtn.disabled = !modified;
+        ocrText.classList.toggle('modified', modified);
+    }
+
+    // --- FONCTIONS UTILITAIRES ---
+    function updateTextStats() {
+        const text = ocrText.value;
+        charCountEl.textContent = text.length;
+        wordCountEl.textContent = text.trim() ? text.trim().split(/\s+/).length : 0;
+    }
+
+    function updateImageTransform() {
+        documentImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom}) rotate(${currentRotation}deg)`;
+    }
+
+    window.zoomIn = function() { currentZoom = Math.min(5, currentZoom + 0.2); updateImageTransform(); }
+    window.zoomOut = function() { currentZoom = Math.max(0.1, currentZoom - 0.2); updateImageTransform(); }
+    window.resetZoom = function() { currentZoom = 1; currentRotation = 0; translateX = 0; translateY = 0; updateImageTransform(); }
+    window.rotateImage = function() { currentRotation = (currentRotation + 90) % 360; updateImageTransform(); }
+
+    window.navigateToDocument = function(docId) {
+        if (!docId) return;
+        if (isModified()) {
+            if (confirm('Vous avez des modifications non sauvegardées. Quitter ce document ?')) {
+                window.location.href = `/document/${docId}/view/`;
+            }
+        } else {
+            window.location.href = `/document/${docId}/view/`;
+        }
+    }
+    
+    // --- NOUVEAU : GESTION DU PLEIN ÉCRAN ---
+    window.toggleFullscreen = function() {
+        if (!document.fullscreenElement) {
+            documentViewer.requestFullscreen().catch(err => {
+                alert(`Erreur lors du passage en plein écran: ${err.message} (${err.name})`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    // --- ACTIONS SUR LE DOCUMENT ---
+    window.saveChanges = function() {
+        ORIS.showNotification(`Modifications de la page ${currentPageIndex + 1} sauvegardées.`, 'success');
+        originalTexts[currentPageIndex] = ocrText.value;
+        checkIfModified();
+    }
+
+    window.validateDocument = function() {
+        if (isModified()) {
+            if (!confirm('Valider le document avec les modifications non sauvegardées ?')) return;
+        }
+        ORIS.showNotification('Document validé ! Passage au suivant...', 'success');
+        setTimeout(() => {
+            if (nextDocBtn && !nextDocBtn.disabled) {
+                nextDocBtn.click();
+            } else {
+                window.location.href = "{% url 'batch_list' %}";
+            }
+        }, 1000);
+    }
+    
+    window.flagForReview = function() { ORIS.showNotification('Document signalé pour révision.', 'warning'); }
+    window.reprocessDocument = function() { ORIS.showNotification('Retraitement OCR lancé.', 'info'); }
+    window.deleteDocument = function() { if(confirm('Supprimer ce document ?')) { ORIS.showNotification('Document supprimé.', 'error'); } }
+    window.highlightLowConfidence = function() { ORIS.showNotification('Fonctionnalité à venir.', 'info'); }
+    window.changePage = changePage; // Exposer la fonction à l'échelle globale pour onclick
+
+    // --- ÉVÉNEMENTS ---
+    ocrText.addEventListener('input', checkIfModified);
+    documentImage.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY; documentImage.style.cursor = 'grabbing'; });
+    document.addEventListener('mousemove', (e) => { if (isDragging) { translateX = e.clientX - startX; translateY = e.clientY - startY; updateImageTransform(); } });
+    document.addEventListener('mouseup', () => { isDragging = false; documentImage.style.cursor = 'grab'; });
+    documentImage.addEventListener('wheel', (e) => { e.preventDefault(); const delta = e.deltaY > 0 ? -0.1 : 0.1; currentZoom = Math.max(0.1, Math.min(5, currentZoom + delta)); updateImageTransform(); });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 's') { e.preventDefault(); if (!saveBtn.disabled) saveChanges(); }
+            if (e.key === 'Enter') { e.preventDefault(); validateDocument(); }
+        }
+        if (!ocrText.matches(':focus')) {
+            if (e.key === 'ArrowLeft' && prevDocBtn && !prevDocBtn.disabled) { prevDocBtn.click(); }
+            if (e.key === 'ArrowRight' && nextDocBtn && !nextDocBtn.disabled) { nextDocBtn.click(); }
+        }
+    });
+
+    window.addEventListener('beforeunload', (e) => {
+        if (isModified()) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    // --- INITIALISATION ---
+    if (pagesData && pagesData.length > 0) {
+        loadPage(0);
+        if (pagesData.length > 1) {
+            docPageNav.style.display = 'flex';
+        }
+    } else {
+        ocrText.value = "Ce document ne contient aucune page ou le traitement a échoué.";
+        documentImage.alt = "Aucune image à afficher";
+        pageIndicator.textContent = "Page 0 / 0";
+    }
+    
+    const avgConfidence = parseFloat('{{ average_confidence|default:0 }}');
+    const confidenceClass = avgConfidence >= 90 ? 'high' : avgConfidence >= 70 ? 'medium' : 'low';
+    avgConfidenceFill.classList.add(`confidence-${confidenceClass}`);
+});
+</script>
+{% endblock %}
+

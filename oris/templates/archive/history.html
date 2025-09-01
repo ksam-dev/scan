@@ -1,0 +1,814 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historique & Archives - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .archive-header {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .stat-card.documents { border-left-color: var(--primary-medium); }
+    .stat-card.batches { border-left-color: #198754; }
+    .stat-card.exports { border-left-color: #ffc107; }
+    .stat-card.storage { border-left-color: #e83e8c; }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.25rem;
+        color: white;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .filters-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .timeline-container {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    
+    .timeline-header {
+        background: var(--gradient-secondary);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .timeline {
+        position: relative;
+        padding: 2rem 1.5rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 3rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--primary-medium);
+        opacity: 0.3;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-left: 4rem;
+    }
+    
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -0.5rem;
+        top: 0.5rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--primary-medium);
+        z-index: 1;
+    }
+    
+    .timeline-marker.success {
+        border-color: #198754;
+    }
+    
+    .timeline-marker.warning {
+        border-color: #ffc107;
+    }
+    
+    .timeline-marker.error {
+        border-color: #dc3545;
+    }
+    
+    .timeline-content {
+        background: var(--gradient-secondary);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .timeline-content:hover {
+        transform: translateX(4px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .timeline-content::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 1rem;
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-right: 8px solid var(--accent-mint);
+    }
+    
+    .timeline-header-content {
+        display: flex;
+        justify-content: between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-time {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-description {
+        color: #6c757d;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+    
+    .timeline-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .timeline-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .action-tag {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .action-create {
+        background: rgba(44, 194, 149, 0.2);
+        color: var(--primary-dark);
+    }
+    
+    .action-validate {
+        background: rgba(25, 135, 84, 0.2);
+        color: #198754;
+    }
+    
+    .action-export {
+        background: rgba(255, 193, 7, 0.2);
+        color: #b45309;
+    }
+    
+    .action-delete {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+    
+    .action-error {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+    
+    .export-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .export-option {
+        background: var(--gradient-secondary);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .export-option:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .export-option.selected {
+        border-color: var(--primary-medium);
+        background: rgba(44, 194, 149, 0.1);
+    }
+    
+    .export-option-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .export-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+    }
+    
+    .export-details {
+        flex: 1;
+    }
+    
+    .export-title {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .export-description {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .empty-timeline {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-timeline i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-medium);
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .timeline::before {
+            left: 1.5rem;
+        }
+        
+        .timeline-item {
+            padding-left: 2.5rem;
+        }
+        
+        .timeline-marker {
+            left: 1rem;
+        }
+        
+        .timeline-content::before {
+            display: none;
+        }
+        
+        .timeline-meta {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .timeline-actions {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-archive me-1"></i>Historique & Archives
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="archive-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 fw-bold text-gradient mb-1">Historique & Archives</h1>
+                <p class="text-muted mb-0">Consultez l'historique des actions et exportez vos données</p>
+            </div>
+            <div>
+                <button class="btn btn-oris-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                    <i class="fas fa-download me-2"></i>Exporter les données
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="stats-overview">
+        <div class="stat-card documents">
+            <div class="stat-icon" style="background: var(--gradient-primary);">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_documents|default:0 }}</div>
+            <div class="stat-label">Documents archivés</div>
+        </div>
+        
+        <div class="stat-card batches">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #198754, #20c997);">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_batches|default:0 }}</div>
+            <div class="stat-label">Lots traités</div>
+        </div>
+        
+        <div class="stat-card exports">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_exports|default:0 }}</div>
+            <div class="stat-label">Exports générés</div>
+        </div>
+        
+        <div class="stat-card storage">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #e83e8c, #6f42c1);">
+                <i class="fas fa-hdd"></i>
+            </div>
+            <div class="stat-number">{{ stats.storage_used|default:"0 GB" }}</div>
+            <div class="stat-label">Stockage utilisé</div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Filtres -->
+        <div class="col-lg-3 mb-4">
+            <div class="filters-panel">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-filter me-2 text-primary"></i>
+                    Filtres
+                </h5>
+                
+                <form method="get" id="filtersForm">
+                    <div class="mb-3">
+                        <label for="dateFrom" class="form-label-oris">Date de début</label>
+                        <input type="date" class="form-control form-control-oris" 
+                               id="dateFrom" name="date_from" value="{{ request.GET.date_from }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="dateTo" class="form-label-oris">Date de fin</label>
+                        <input type="date" class="form-control form-control-oris" 
+                               id="dateTo" name="date_to" value="{{ request.GET.date_to }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="actionType" class="form-label-oris">Type d'action</label>
+                        <select class="form-select form-control-oris" id="actionType" name="action_type">
+                            <option value="">Toutes les actions</option>
+                            <option value="create" {% if request.GET.action_type == 'create' %}selected{% endif %}>Création</option>
+                            <option value="validate" {% if request.GET.action_type == 'validate' %}selected{% endif %}>Validation</option>
+                            <option value="export" {% if request.GET.action_type == 'export' %}selected{% endif %}>Export</option>
+                            <option value="delete" {% if request.GET.action_type == 'delete' %}selected{% endif %}>Suppression</option>
+                            <option value="error" {% if request.GET.action_type == 'error' %}selected{% endif %}>Erreur</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="user" class="form-label-oris">Utilisateur</label>
+                        <select class="form-select form-control-oris" id="user" name="user">
+                            <option value="">Tous les utilisateurs</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if request.GET.user == user.id|stringformat:"s" %}selected{% endif %}>
+                                {{ user.get_full_name|default:user.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="search" class="form-label-oris">Recherche</label>
+                        <input type="text" class="form-control form-control-oris" 
+                               id="search" name="search" placeholder="Mots-clés..." 
+                               value="{{ request.GET.search }}">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-oris-primary w-100 mb-2">
+                        <i class="fas fa-search me-2"></i>Appliquer
+                    </button>
+                    <button type="button" class="btn btn-oris-outline w-100" onclick="clearFilters()">
+                        <i class="fas fa-times me-2"></i>Effacer
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="col-lg-9">
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">
+                            Historique des actions
+                            <span class="badge bg-primary ms-2">{{ activities.count }}</span>
+                        </h5>
+                        
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="sortBy('date')">
+                                <i class="fas fa-calendar me-1"></i>Date
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="sortBy('user')">
+                                <i class="fas fa-user me-1"></i>Utilisateur
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="sortBy('type')">
+                                <i class="fas fa-tag me-1"></i>Type
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if activities %}
+                <div class="timeline">
+                    {% for activity in activities %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker {{ activity.status|default:'success' }}"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-header-content">
+                                <div class="flex-grow-1">
+                                    <div class="timeline-title">{{ activity.title }}</div>
+                                    <div class="timeline-time">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ activity.created_at|date:"d/m/Y H:i:s" }}
+                                    </div>
+                                </div>
+                                <div class="action-tag action-{{ activity.action_type }}">
+                                    {{ activity.get_action_type_display }}
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-description">
+                                {{ activity.description }}
+                            </div>
+                            
+                            <div class="timeline-meta">
+                                <span>
+                                    <i class="fas fa-user me-1"></i>
+                                    {{ user.get_full_name|default:user.get_username }}
+                                </span>
+                                {% if activity.batch %}
+                                <span>
+                                    <i class="fas fa-layer-group me-1"></i>
+                                    {{ activity.batch.name }}
+                                </span>
+                                {% endif %}
+                                {% if activity.document %}
+                                <span>
+                                    <i class="fas fa-file-alt me-1"></i>
+                                    {{ activity.document.filename }}
+                                </span>
+                                {% endif %}
+                                {% if activity.ip_address %}
+                                <span>
+                                    <i class="fas fa-globe me-1"></i>
+                                    {{ activity.ip_address }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if activity.details %}
+                            <div class="timeline-actions">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="showDetails('{{ activity.id }}')">
+                                    <i class="fas fa-info-circle me-1"></i>Détails
+                                </button>
+                                {% if activity.related_file %}
+                                <a href="{{ activity.related_file.url }}" 
+                                   class="btn btn-sm btn-outline-secondary" target="_blank">
+                                    <i class="fas fa-download me-1"></i>Télécharger
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-timeline">
+                    <i class="fas fa-history"></i>
+                    <h4 class="fw-bold mb-3">Aucune activité trouvée</h4>
+                    <p class="mb-4">Aucune action ne correspond aux critères de recherche sélectionnés.</p>
+                    <button class="btn btn-oris-primary" onclick="clearFilters()">
+                        <i class="fas fa-refresh me-2"></i>Voir toute l'activité
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'export -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-download me-2 text-primary"></i>
+                    Exporter les données
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportForm">
+                    <!-- Type d'export -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Type d'export</h6>
+                        
+                        <div class="export-option" data-export="documents">
+                            <div class="export-option-content">
+                                <div class="export-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="export-details">
+                                    <div class="export-title">Documents et résultats OCR</div>
+                                    <div class="export-description">Exporter tous les documents avec leur texte OCR extrait</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="export-option" data-export="batches">
+                            <div class="export-option-content">
+                                <div class="export-icon">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                <div class="export-details">
+                                    <div class="export-title">Lots et métadonnées</div>
+                                    <div class="export-description">Exporter les informations des lots avec statistiques</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="export-option" data-export="activity">
+                            <div class="export-option-content">
+                                <div class="export-icon">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <div class="export-details">
+                                    <div class="export-title">Historique des actions</div>
+                                    <div class="export-description">Exporter les logs d'activité et actions utilisateurs</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="export-option" data-export="users">
+                            <div class="export-option-content">
+                                <div class="export-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="export-details">
+                                    <div class="export-title">Utilisateurs et permissions</div>
+                                    <div class="export-description">Exporter la liste des utilisateurs avec leurs rôles</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Période -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="exportDateFrom" class="form-label-oris">Date de début</label>
+                            <input type="date" class="form-control form-control-oris" id="exportDateFrom" name="date_from">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="exportDateTo" class="form-label-oris">Date de fin</label>
+                            <input type="date" class="form-control form-control-oris" id="exportDateTo" name="date_to">
+                        </div>
+                    </div>
+                    
+                    <!-- Format -->
+                    <div class="mb-3">
+                        <label for="exportFormat" class="form-label-oris">Format d'export</label>
+                        <select class="form-select form-control-oris" id="exportFormat" name="format">
+                            <option value="csv">CSV (Excel)</option>
+                            <option value="json">JSON</option>
+                            <option value="pdf">PDF (Rapport)</option>
+                            <option value="xlsx">Excel (.xlsx)</option>
+                        </select>
+                    </div>
+                    
+                    <input type="hidden" id="exportType" name="export_type">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-oris-outline" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-oris-primary" onclick="startExport()" id="exportBtn" disabled>
+                    <i class="fas fa-download me-2"></i>Générer l'export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de détails d'activité -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Détails de l'activité</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-oris-outline" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestion des options d'export
+    document.querySelectorAll('.export-option').forEach(option => {
+        option.addEventListener('click', function() {
+            document.querySelectorAll('.export-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            document.getElementById('exportType').value = this.dataset.export;
+            document.getElementById('exportBtn').disabled = false;
+        });
+    });
+    
+    function startExport() {
+        const form = document.getElementById('exportForm');
+        const formData = new FormData(form);
+        
+        // Afficher un indicateur de progression
+        const exportBtn = document.getElementById('exportBtn');
+        const originalText = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Génération...';
+        exportBtn.disabled = true;
+        
+        fetch('/archive/export/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            }
+            throw new Error('Erreur lors de l\'export');
+        })
+        .then(blob => {
+            // Télécharger le fichier
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `oris_export_${new Date().toISOString().split('T')[0]}.${formData.get('format')}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            ORIS.showNotification('Export généré avec succès', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+        })
+        .catch(error => {
+            ORIS.showNotification('Erreur lors de l\'export', 'error');
+        })
+        .finally(() => {
+            exportBtn.innerHTML = originalText;
+            exportBtn.disabled = false;
+        });
+    }
+    
+    function showDetails(activityId) {
+        fetch(`/archive/activity/${activityId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('detailsContent').innerHTML = data.html;
+                new bootstrap.Modal(document.getElementById('detailsModal')).show();
+            } else {
+                ORIS.showNotification('Impossible de charger les détails', 'error');
+            }
+        });
+    }
+    
+    function sortBy(criteria) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort', criteria);
+        window.location = url;
+    }
+    
+    function clearFilters() {
+        const form = document.getElementById('filtersForm');
+        form.reset();
+        window.location = window.location.pathname;
+    }
+    
+    // Auto-refresh pour les nouvelles activités
+    let lastActivityId = {{ activities.first.id|default:0 }};
+    
+    setInterval(() => {
+        fetch(`/archive/check-new/?last_id=${lastActivityId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.has_new) {
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+                notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                notification.innerHTML = `
+                    Nouvelles activités disponibles
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-primary" onclick="location.reload()">Actualiser</button>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                
+                lastActivityId = data.latest_id;
+            }
+        });
+    }, 30000); // Vérifier toutes les 30 secondes
+    
+    // Réinitialiser le modal d'export à la fermeture
+    document.getElementById('exportModal').addEventListener('hidden.bs.modal', function() {
+        document.querySelectorAll('.export-option').forEach(o => o.classList.remove('selected'));
+        document.getElementById('exportForm').reset();
+        document.getElementById('exportType').value = '';
+        document.getElementById('exportBtn').disabled = true;
+    });
+</script>
+{% endblock %}
+

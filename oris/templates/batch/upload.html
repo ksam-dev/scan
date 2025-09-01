@@ -1,0 +1,741 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nouveau lot - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .drag-drop-zone {
+        border: 3px dashed var(--primary-medium);
+        border-radius: 1.5rem;
+        padding: 4rem 2rem;
+        text-align: center;
+        background: var(--gradient-secondary);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .drag-drop-zone:hover,
+    .drag-drop-zone.dragover {
+        border-color: var(--primary-bright);
+        background: var(--accent-mint);
+        transform: scale(1.02);
+    }
+    
+    .drag-drop-zone.has-files {
+        border-style: solid;
+        border-color: var(--primary-bright);
+        background: rgba(0, 223, 130, 0.1);
+    }
+    
+    .drag-drop-zone i {
+        font-size: 4rem;
+        color: var(--primary-medium);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .drag-drop-zone:hover i {
+        color: var(--primary-bright);
+        transform: scale(1.1);
+    }
+    
+    .file-list {
+        margin-top: 2rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .file-item {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+    }
+    
+    .file-item:hover {
+        transform: translateX(4px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .file-preview {
+        width: 50px;
+        height: 50px;
+        border-radius: 0.75rem;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+        margin-right: 1rem;
+    }
+    
+    .metadata-form {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 2rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .section-title {
+        color: var(--primary-dark);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 0.75rem;
+        color: var(--primary-medium);
+    }
+    
+    .tag-input {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border: 2px solid rgba(3, 98, 76, 0.1);
+        border-radius: 0.75rem;
+        min-height: 50px;
+        cursor: text;
+    }
+    
+    .tag-input:focus-within {
+        border-color: var(--primary-medium);
+        box-shadow: 0 0 0 0.2rem rgba(44, 194, 149, 0.25);
+    }
+    
+    .tag {
+        background: var(--primary-medium);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .tag .remove-tag {
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s ease;
+    }
+    
+    .tag .remove-tag:hover {
+        opacity: 1;
+    }
+    
+    .tag-input input {
+        border: none;
+        outline: none;
+        background: transparent;
+        flex: 1;
+        min-width: 100px;
+        padding: 0.25rem;
+    }
+    
+    .processing-options {
+        background: var(--gradient-secondary);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .option-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .option-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .option-card.selected {
+        border-color: var(--primary-medium);
+        background: rgba(44, 194, 149, 0.1);
+    }
+    
+    .progress-container {
+        display: none;
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .upload-progress {
+        height: 12px;
+        border-radius: 6px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    
+    .upload-progress-bar {
+        height: 100%;
+        background: var(--gradient-primary);
+        border-radius: 6px;
+        transition: width 0.3s ease;
+        position: relative;
+    }
+    
+    .upload-progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 33%, rgba(255,255,255,0.3) 33%, rgba(255,255,255,0.3) 66%, transparent 66%);
+        background-size: 20px 20px;
+        animation: progress-stripes 1s linear infinite;
+    }
+    
+    @keyframes progress-stripes {
+        0% { background-position: 0 0; }
+        100% { background-position: 20px 0; }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-cloud-upload-alt me-1"></i>Nouveau lot
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold text-gradient mb-1">Créer un nouveau lot</h1>
+                    <p class="text-muted mb-0">Uploadez vos documents et configurez les paramètres de traitement</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-oris-outline me-2" onclick="resetForm()">
+                        <i class="fas fa-redo me-2"></i>Réinitialiser
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <form id="batchUploadForm" method="post" action="{% url 'batch_upload' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Zone d'upload -->
+            <div class="col-lg-8 mb-4">
+                <div class="upload-container">
+                    <h4 class="fw-bold mb-3">
+                        <i class="fas fa-cloud-upload-alt me-2 text-primary"></i>
+                        Documents à traiter
+                    </h4>
+                    
+                    <div class="drag-drop-zone" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h5 class="fw-bold mb-2">Glissez vos fichiers ici</h5>
+                        <p class="text-muted mb-3">ou cliquez pour sélectionner des fichiers</p>
+                        <p class="small text-muted">
+                            Formats supportés : PDF, JPG, PNG, TIFF • Taille max : 50 MB par fichier
+                        </p>
+                        <input type="file" id="fileInput" name="documents" multiple 
+                               accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif" style="display: none;">
+                    </div>
+                    
+                    <div class="file-list" id="fileList" style="display: none;"></div>
+                </div>
+                
+                <!-- Barre de progression -->
+                <div class="progress-container" id="progressContainer">
+                    <h5 class="fw-bold mb-3">
+                        <i class="fas fa-cog fa-spin me-2 text-primary"></i>
+                        Traitement en cours...
+                    </h5>
+                    <div class="upload-progress">
+                        <div class="upload-progress-bar" id="progressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Progression</span>
+                        <span class="fw-semibold" id="progressText">0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Métadonnées et configuration -->
+            <div class="col-lg-4 mb-4">
+                <div class="metadata-form">
+                    <!-- Informations générales -->
+                    <div class="form-section">
+                        <h5 class="section-title">
+                            <i class="fas fa-info-circle"></i>
+                            Informations générales
+                        </h5>
+                        
+                        <div class="mb-3">
+                            <label for="batchName" class="form-label-oris">Nom du lot *</label>
+                            <input type="text" class="form-control form-control-oris" id="batchName" 
+                                   name="batch_name" required placeholder="Ex: Factures Q4 2024">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label-oris">Description</label>
+                            <textarea class="form-control form-control-oris" id="description" 
+                                      name="description" rows="3" 
+                                      placeholder="Description optionnelle du lot"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="client" class="form-label-oris">Client/Projet</label>
+                            <select class="form-select form-control-oris" id="client" name="client">
+                                <option value="">Sélectionner un client</option>
+                                <option value="client1">Entreprise ABC</option>
+                                <option value="client2">Société XYZ</option>
+                                <option value="client3">Organisation DEF</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="organization" class="form-label-oris">Organisation *</label>
+                        <select class="form-select form-control-oris" id="organization" name="organization" required>
+                            <option value="">Sélectionner une organisation</option>
+                            {% for org in organizations %}
+                            <option value="{{ org.id }}">{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <!-- Type de document -->
+                    <div class="form-section">
+                        <h5 class="section-title">
+                            <i class="fas fa-file-alt"></i>
+                            Type de document
+                        </h5>
+                        
+                        <div class="mb-3">
+                            <select class="form-select form-control-oris" id="documentType" name="document_type" required>
+                                <option value="">Sélectionner le type</option>
+                                <option value="invoice">Factures</option>
+                                <option value="contract">Contrats</option>
+                                <option value="receipt">Reçus</option>
+                                <option value="form">Formulaires</option>
+                                <option value="letter">Courriers</option>
+                                <option value="other">Autre</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="priority" class="form-label-oris">Priorité</label>
+                            <select class="form-select form-control-oris" id="priority" name="priority">
+                                <option value="normal">Normale</option>
+                                <option value="high">Élevée</option>
+                                <option value="urgent">Urgente</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div class="form-section">
+                        <h5 class="section-title">
+                            <i class="fas fa-tags"></i>
+                            Tags
+                        </h5>
+                        
+                        <div class="tag-input" id="tagInput">
+                            <input type="text" placeholder="Ajouter un tag..." id="tagInputField">
+                        </div>
+                        <input type="hidden" name="tags" id="tagsHidden">
+                        <small class="text-muted">Appuyez sur Entrée pour ajouter un tag</small>
+                    </div>
+                    
+                    <!-- Options de traitement -->
+                    <div class="form-section">
+                        <h5 class="section-title">
+                            <i class="fas fa-cogs"></i>
+                            Options de traitement
+                        </h5>
+                        
+                        <div class="processing-options">
+                            <div class="option-card" data-option="auto">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-magic fa-2x text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">Automatique</div>
+                                        <small class="text-muted">Traitement OCR standard</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="option-card" data-option="enhanced">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-star fa-2x text-warning"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">Amélioré</div>
+                                        <small class="text-muted">Précision maximale</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="option-card" data-option="fast">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-bolt fa-2x text-success"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">Rapide</div>
+                                        <small class="text-muted">Traitement accéléré</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="processing_mode" id="processingMode" value="auto">
+                        
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="autoValidation" name="auto_validation">
+                            <label class="form-check-label" for="autoValidation">
+                                Validation automatique (confiance > 95%)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Boutons d'action -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-oris-primary" id="submitBtn" disabled>
+                            <i class="fas fa-play me-2"></i>
+                            Démarrer le traitement
+                        </button>
+                        <button type="button" class="btn btn-oris-outline" onclick="saveDraft()">
+                            <i class="fas fa-save me-2"></i>
+                            Sauvegarder en brouillon
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedFiles = [];
+    let tags = [];
+    
+    // Gestion du drag & drop
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Événements drag & drop
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+    
+    // Gestion des fichiers
+    function handleFiles(files) {
+        selectedFiles = Array.from(files);
+        displayFiles();
+        updateSubmitButton();
+    }
+    
+    function displayFiles() {
+        if (selectedFiles.length === 0) {
+            fileList.style.display = 'none';
+            dropZone.classList.remove('has-files');
+            return;
+        }
+        
+        dropZone.classList.add('has-files');
+        fileList.style.display = 'block';
+        fileList.innerHTML = '';
+        
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item d-flex align-items-center';
+            
+            const fileType = getFileType(file.name);
+            const fileIcon = getFileIcon(fileType);
+            
+            fileItem.innerHTML = `
+                <div class="file-preview">
+                    <i class="${fileIcon}"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">${file.name}</div>
+                    <div class="text-muted small">
+                        ${formatFileSize(file.size)} • ${fileType.toUpperCase()}
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            fileList.appendChild(fileItem);
+        });
+    }
+    
+    function removeFile(index) {
+        selectedFiles.splice(index, 1);
+        displayFiles();
+        updateSubmitButton();
+    }
+    
+    function getFileType(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
+        return extension;
+    }
+    
+    function getFileIcon(fileType) {
+        const icons = {
+            'pdf': 'fas fa-file-pdf',
+            'jpg': 'fas fa-file-image',
+            'jpeg': 'fas fa-file-image',
+            'png': 'fas fa-file-image',
+            'tiff': 'fas fa-file-image',
+            'tif': 'fas fa-file-image'
+        };
+        return icons[fileType] || 'fas fa-file';
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function updateSubmitButton() {
+        const batchName = document.getElementById('batchName').value.trim();
+        const documentType = document.getElementById('documentType').value;
+        
+        submitBtn.disabled = !(selectedFiles.length > 0 && batchName && documentType);
+    }
+    
+    // Gestion des tags
+    const tagInput = document.getElementById('tagInput');
+    const tagInputField = document.getElementById('tagInputField');
+    const tagsHidden = document.getElementById('tagsHidden');
+    
+    tagInputField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addTag(tagInputField.value.trim());
+        }
+    });
+    
+    function addTag(tagText) {
+        if (tagText && !tags.includes(tagText)) {
+            tags.push(tagText);
+            updateTagsDisplay();
+            tagInputField.value = '';
+        }
+    }
+    
+    function removeTag(tagText) {
+        tags = tags.filter(tag => tag !== tagText);
+        updateTagsDisplay();
+    }
+    
+    function updateTagsDisplay() {
+        const existingTags = tagInput.querySelectorAll('.tag');
+        existingTags.forEach(tag => tag.remove());
+        
+        tags.forEach(tagText => {
+            const tagElement = document.createElement('div');
+            tagElement.className = 'tag';
+            tagElement.innerHTML = `
+                ${tagText}
+                <span class="remove-tag" onclick="removeTag('${tagText}')">
+                    <i class="fas fa-times"></i>
+                </span>
+            `;
+            tagInput.insertBefore(tagElement, tagInputField);
+        });
+        
+        tagsHidden.value = tags.join(',');
+    }
+    
+    // Gestion des options de traitement
+    const optionCards = document.querySelectorAll('.option-card');
+    const processingMode = document.getElementById('processingMode');
+    
+    optionCards.forEach(card => {
+        card.addEventListener('click', () => {
+            optionCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            processingMode.value = card.dataset.option;
+        });
+    });
+    
+    // Sélectionner l'option par défaut
+    document.querySelector('.option-card[data-option="auto"]').classList.add('selected');
+    
+    // Validation du formulaire
+    document.getElementById('batchName').addEventListener('input', updateSubmitButton);
+    document.getElementById('documentType').addEventListener('change', updateSubmitButton);
+    
+    // Soumission du formulaire
+    document.getElementById('batchUploadForm').addEventListener('submit', (e) => {
+        e.preventDefault(); // Empêcher la soumission classique
+        startProcessing(); // Utiliser notre fonction AJAX
+    });
+        
+    function startProcessing() {
+    const form = document.getElementById('batchUploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    // Vérifier la validité du formulaire avant de soumettre
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        ORIS.showNotification('Veuillez remplir tous les champs obligatoires.', 'error');
+        return;
+    }
+
+    // Afficher la progression et désactiver le bouton
+    progressContainer.style.display = 'block';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-cog fa-spin me-2"></i>Envoi en cours...';
+
+    const formData = new FormData(form);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', form.action, true);
+    
+    // Mettre à jour la barre de progression pendant l'upload
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            progressText.textContent = Math.round(percentComplete) + '%';
+        }
+    });
+
+    // Gérer la réponse du serveur
+    xhr.onload = function() {
+        if (xhr.status === 200 || xhr.status === 302) { // 302 est pour la redirection
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Terminé !';
+            ORIS.showNotification('Lot envoyé pour traitement ! Vous allez être redirigé.', 'success');
+            
+            // La redirection est gérée par la vue Django, mais on peut forcer au cas où
+            // La vue Django renvoie un redirect, donc le navigateur devrait suivre.
+            // Si ce n'est pas le cas, cette ligne est une sécurité.
+            window.location.href = '{% url "batch_list" %}';
+        } else {
+            // Gérer les erreurs
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-play me-2"></i>Démarrer le traitement';
+            progressContainer.style.display = 'none';
+            ORIS.showNotification('Une erreur est survenue lors de l\'envoi du lot.', 'error');
+        }
+    };
+
+    xhr.onerror = function() {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-play me-2"></i>Démarrer le traitement';
+        progressContainer.style.display = 'none';
+        ORIS.showNotification('Erreur réseau. Impossible de contacter le serveur.', 'error');
+    };
+
+    xhr.send(formData);
+}
+
+    
+    function resetForm() {
+        selectedFiles = [];
+        tags = [];
+        displayFiles();
+        updateTagsDisplay();
+        document.getElementById('batchUploadForm').reset();
+        document.querySelector('.option-card.selected').classList.remove('selected');
+        document.querySelector('.option-card[data-option="auto"]').classList.add('selected');
+        processingMode.value = 'auto';
+        updateSubmitButton();
+    }
+    
+    function saveDraft() {
+    ORIS.showNotification('La sauvegarde en brouillon sera bientôt disponible !', 'info');
+}
+</script>
+{% endblock %}
+

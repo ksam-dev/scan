@@ -1,0 +1,894 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des utilisateurs - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .stat-card.total { border-left-color: var(--primary-medium); }
+    .stat-card.active { border-left-color: #198754; }
+    .stat-card.inactive { border-left-color: #6c757d; }
+    .stat-card.admins { border-left-color: #e83e8c; }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.25rem;
+        color: white;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .users-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        background: var(--gradient-secondary);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .user-card {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .user-card:hover {
+        background: var(--accent-mint);
+    }
+    
+    .user-card:last-child {
+        border-bottom: none;
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    
+    .user-details {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .user-name {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .user-email {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .user-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .user-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-active {
+        background: rgba(25, 135, 84, 0.2);
+        color: #198754;
+    }
+    
+    .status-inactive {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+    }
+    
+    .status-pending {
+        background: rgba(255, 193, 7, 0.2);
+        color: #b45309;
+    }
+    
+    .role-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .role-admin {
+        background: rgba(232, 62, 140, 0.2);
+        color: #e83e8c;
+    }
+    
+    .role-validator {
+        background: rgba(44, 194, 149, 0.2);
+        color: var(--primary-dark);
+    }
+    
+    .role-user {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+    }
+    
+    .user-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+    }
+    
+    .action-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .action-btn.edit {
+        background: var(--primary-medium);
+        color: white;
+    }
+    
+    .action-btn.edit:hover {
+        background: var(--primary-dark);
+    }
+    
+    .action-btn.delete {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.delete:hover {
+        background: #c82333;
+    }
+    
+    .action-btn.toggle {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .action-btn.toggle:hover {
+        background: #495057;
+    }
+    
+    .filters-bar {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .search-box {
+        position: relative;
+        max-width: 300px;
+    }
+    
+    .search-box input {
+        padding-left: 2.5rem;
+    }
+    
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    
+    .user-modal .modal-content {
+        border-radius: 1.5rem;
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .user-modal .modal-header {
+        background: var(--gradient-secondary);
+        border-bottom: 1px solid #e9ecef;
+        border-radius: 1.5rem 1.5rem 0 0;
+    }
+    
+    .permission-group {
+        background: var(--gradient-secondary);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .permission-item {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .permission-item:last-child {
+        border-bottom: none;
+    }
+    
+    @media (max-width: 768px) {
+        .user-info {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+        
+        .user-meta {
+            justify-content: center;
+        }
+        
+        .user-actions {
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .filters-bar {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'admin_settings' %}" class="text-decoration-none">
+                <i class="fas fa-cogs me-1"></i>Administration
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-users me-1"></i>Utilisateurs
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="admin-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 fw-bold text-gradient mb-1">Gestion des utilisateurs</h1>
+                <p class="text-muted mb-0">Administrez les comptes utilisateurs et leurs permissions</p>
+            </div>
+            <div>
+                <button class="btn btn-oris-primary" data-bs-toggle="modal" data-bs-target="#userModal">
+                    <i class="fas fa-user-plus me-2"></i>Nouvel utilisateur
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card total">
+            <div class="stat-icon" style="background: var(--gradient-primary);">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_users|default:0 }}</div>
+            <div class="stat-label">Utilisateurs total</div>
+        </div>
+        
+        <div class="stat-card active">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #198754, #20c997);">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stat-number">{{ stats.active_users|default:0 }}</div>
+            <div class="stat-label">Actifs</div>
+        </div>
+        
+        <div class="stat-card inactive">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #6c757d, #adb5bd);">
+                <i class="fas fa-user-times"></i>
+            </div>
+            <div class="stat-number">{{ stats.inactive_users|default:0 }}</div>
+            <div class="stat-label">Inactifs</div>
+        </div>
+        
+        <div class="stat-card admins">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #e83e8c, #fd7e14);">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="stat-number">{{ stats.admin_users|default:0 }}</div>
+            <div class="stat-label">Administrateurs</div>
+        </div>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filters-bar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <div class="search-box">
+                <input type="text" class="form-control form-control-oris" 
+                       placeholder="Rechercher un utilisateur..." id="userSearch">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            
+            <select class="form-select form-control-oris" id="roleFilter" style="width: auto;">
+                <option value="">Tous les rôles</option>
+                <option value="admin">Administrateurs</option>
+                <option value="validator">Validateurs</option>
+                <option value="user">Utilisateurs</option>
+            </select>
+            
+            <select class="form-select form-control-oris" id="statusFilter" style="width: auto;">
+                <option value="">Tous les statuts</option>
+                <option value="active">Actifs</option>
+                <option value="inactive">Inactifs</option>
+                <option value="pending">En attente</option>
+            </select>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-oris-outline btn-sm" onclick="exportUsers()">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+            <button class="btn btn-oris-outline btn-sm" onclick="importUsers()">
+                <i class="fas fa-upload me-1"></i>Importer
+            </button>
+        </div>
+    </div>
+    
+    <!-- Liste des utilisateurs -->
+    <div class="users-panel">
+        <div class="panel-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    Utilisateurs
+                    <span class="badge bg-primary ms-2" id="userCount">{{ users.count }}</span>
+                </h5>
+                
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="sortUsers('name')">
+                        <i class="fas fa-sort-alpha-down me-1"></i>Nom
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="sortUsers('date')">
+                        <i class="fas fa-calendar me-1"></i>Date
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="sortUsers('activity')">
+                        <i class="fas fa-chart-line me-1"></i>Activité
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="usersList">
+            {% for user in users %}
+            <div class="user-card" data-user-id="{{ user.id }}">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ user.first_name.0|default:user.username.0 }}{{ user.last_name.0 }}
+                    </div>
+                    
+                    <div class="user-details">
+                        <div class="user-name">
+                            {{ user.get_full_name|default:user.username }}
+                            {% if user.is_superuser %}
+                            <span class="role-badge role-admin">Admin</span>
+                            {% elif user.groups.all %}
+                            <span class="role-badge role-validator">Validateur</span>
+                            {% else %}
+                            <span class="role-badge role-user">Utilisateur</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="user-email">{{ user.email }}</div>
+                        
+                        <div class="user-meta">
+                            <span>
+                                <i class="fas fa-calendar me-1"></i>
+                                Inscrit le {{ user.date_joined|date:"d/m/Y" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-clock me-1"></i>
+                                Dernière connexion: {{ user.last_login|date:"d/m/Y H:i"|default:"Jamais" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-file-alt me-1"></i>
+                                {{ user.validated_documents_count|default:0 }} documents validés
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        <span class="user-status status-{% if user.is_active %}active{% else %}inactive{% endif %}">
+                            {% if user.is_active %}Actif{% else %}Inactif{% endif %}
+                        </span>
+                        
+                        <div class="user-actions">
+                            <button class="action-btn edit" onclick="editUser({{ user.id }})" 
+                                    title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            
+                            <button class="action-btn toggle" 
+                                    onclick="toggleUserStatus({{ user.id }}, {{ user.is_active|yesno:'false,true' }})"
+                                    title="{% if user.is_active %}Désactiver{% else %}Activer{% endif %}">
+                                <i class="fas fa-{% if user.is_active %}pause{% else %}play{% endif %}"></i>
+                            </button>
+                            
+                            {% if not user.is_superuser %}
+                            <button class="action-btn delete" onclick="deleteUser({{ user.id }}, '{{ user.get_full_name|default:user.username }}')"
+                                    title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center p-5">
+                <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucun utilisateur trouvé</h5>
+                <p class="text-muted">Commencez par créer votre premier utilisateur.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal utilisateur -->
+<div class="modal fade user-modal" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-user-plus me-2 text-primary"></i>
+                    <span id="modalTitle">Nouvel utilisateur</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId" name="user_id">
+                    
+                    <!-- Informations personnelles -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="firstName" class="form-label-oris">Prénom *</label>
+                            <input type="text" class="form-control form-control-oris" 
+                                   id="firstName" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="lastName" class="form-label-oris">Nom *</label>
+                            <input type="text" class="form-control form-control-oris" 
+                                   id="lastName" name="last_name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label-oris">Email *</label>
+                        <input type="email" class="form-control form-control-oris" 
+                               id="email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label-oris">Nom d'utilisateur *</label>
+                        <input type="text" class="form-control form-control-oris" 
+                               id="username" name="username" required>
+                    </div>
+                    
+                    <!-- Mot de passe -->
+                    <div class="row mb-3" id="passwordSection">
+                        <div class="col-md-6">
+                            <label for="password" class="form-label-oris">Mot de passe *</label>
+                            <input type="password" class="form-control form-control-oris" 
+                                   id="password" name="password">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confirmPassword" class="form-label-oris">Confirmer *</label>
+                            <input type="password" class="form-control form-control-oris" 
+                                   id="confirmPassword" name="confirm_password">
+                        </div>
+                    </div>
+                    
+                    <!-- Rôle et permissions -->
+                    <div class="mb-3">
+                        <label for="role" class="form-label-oris">Rôle</label>
+                        <select class="form-select form-control-oris" id="role" name="role">
+                            <option value="user">Utilisateur</option>
+                            <option value="validator">Validateur</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Permissions détaillées -->
+                    <div class="permission-group">
+                        <h6 class="fw-bold mb-3">Permissions</h6>
+                        
+                        <div class="permission-item">
+                            <div>
+                                <div class="fw-semibold">Créer des lots</div>
+                                <small class="text-muted">Peut uploader et créer de nouveaux lots</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="canCreateBatches" name="can_create_batches">
+                            </div>
+                        </div>
+                        
+                        <div class="permission-item">
+                            <div>
+                                <div class="fw-semibold">Valider des documents</div>
+                                <small class="text-muted">Peut valider et corriger les résultats OCR</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="canValidate" name="can_validate">
+                            </div>
+                        </div>
+                        
+                        <div class="permission-item">
+                            <div>
+                                <div class="fw-semibold">Exporter des données</div>
+                                <small class="text-muted">Peut exporter les résultats en CSV/PDF</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="canExport" name="can_export">
+                            </div>
+                        </div>
+                        
+                        <div class="permission-item">
+                            <div>
+                                <div class="fw-semibold">Gérer les utilisateurs</div>
+                                <small class="text-muted">Peut créer et modifier d'autres utilisateurs</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="canManageUsers" name="can_manage_users">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Statut -->
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                        <label class="form-check-label" for="isActive">
+                            Compte actif
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-oris-outline" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-oris-primary" onclick="saveUser()">
+                    <i class="fas fa-save me-2"></i>Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Recherche en temps réel
+    document.getElementById('userSearch').addEventListener('input', function() {
+        filterUsers();
+    });
+    
+    document.getElementById('roleFilter').addEventListener('change', function() {
+        filterUsers();
+    });
+    
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        filterUsers();
+    });
+    
+    function filterUsers() {
+        const search = document.getElementById('userSearch').value.toLowerCase();
+        const roleFilter = document.getElementById('roleFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const userCards = document.querySelectorAll('.user-card');
+        let visibleCount = 0;
+        
+        userCards.forEach(card => {
+            const userName = card.querySelector('.user-name').textContent.toLowerCase();
+            const userEmail = card.querySelector('.user-email').textContent.toLowerCase();
+            const userRole = card.querySelector('.role-badge').textContent.toLowerCase();
+            const userStatus = card.querySelector('.user-status').classList.contains('status-active') ? 'active' : 'inactive';
+            
+            const matchesSearch = userName.includes(search) || userEmail.includes(search);
+            const matchesRole = !roleFilter || userRole.includes(roleFilter);
+            const matchesStatus = !statusFilter || userStatus === statusFilter;
+            
+            if (matchesSearch && matchesRole && matchesStatus) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('userCount').textContent = visibleCount;
+    }
+    
+    // Gestion des utilisateurs
+    function editUser(userId) {
+        fetch(`/admin/users/${userId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                
+                document.getElementById('modalTitle').textContent = 'Modifier l\'utilisateur';
+                document.getElementById('userId').value = user.id;
+                document.getElementById('firstName').value = user.first_name;
+                document.getElementById('lastName').value = user.last_name;
+                document.getElementById('email').value = user.email;
+                document.getElementById('username').value = user.username;
+                document.getElementById('isActive').checked = user.is_active;
+                
+                // Masquer les champs de mot de passe pour la modification
+                document.getElementById('passwordSection').style.display = 'none';
+                document.getElementById('password').required = false;
+                document.getElementById('confirmPassword').required = false;
+                
+                // Définir le rôle
+                if (user.is_superuser) {
+                    document.getElementById('role').value = 'admin';
+                } else if (user.groups && user.groups.length > 0) {
+                    document.getElementById('role').value = 'validator';
+                } else {
+                    document.getElementById('role').value = 'user';
+                }
+                
+                // Définir les permissions
+                document.getElementById('canCreateBatches').checked = user.permissions.can_create_batches;
+                document.getElementById('canValidate').checked = user.permissions.can_validate;
+                document.getElementById('canExport').checked = user.permissions.can_export;
+                document.getElementById('canManageUsers').checked = user.permissions.can_manage_users;
+                
+                new bootstrap.Modal(document.getElementById('userModal')).show();
+            }
+        });
+    }
+    
+    function saveUser() {
+        const form = document.getElementById('userForm');
+        const formData = new FormData(form);
+        const userId = document.getElementById('userId').value;
+        
+        // Validation
+        if (!validateUserForm()) {
+            return;
+        }
+        
+        const url = userId ? `/admin/users/${userId}/update/` : '/admin/users/create/';
+        const method = userId ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification(userId ? 'Utilisateur modifié' : 'Utilisateur créé', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                location.reload();
+            } else {
+                ORIS.showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+            }
+        });
+    }
+    
+    function validateUserForm() {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const userId = document.getElementById('userId').value;
+        
+        // Vérifier les mots de passe pour les nouveaux utilisateurs
+        if (!userId && password !== confirmPassword) {
+            ORIS.showNotification('Les mots de passe ne correspondent pas', 'error');
+            return false;
+        }
+        
+        if (!userId && password.length < 8) {
+            ORIS.showNotification('Le mot de passe doit contenir au moins 8 caractères', 'error');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function toggleUserStatus(userId, activate) {
+        const action = activate ? 'activer' : 'désactiver';
+        
+        if (confirm(`Êtes-vous sûr de vouloir ${action} cet utilisateur ?`)) {
+            fetch(`/admin/users/${userId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    is_active: activate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification(`Utilisateur ${activate ? 'activé' : 'désactivé'}`, 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors de la modification', 'error');
+                }
+            });
+        }
+    }
+    
+    function deleteUser(userId, userName) {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur "${userName}" ? Cette action est irréversible.`)) {
+            fetch(`/admin/users/${userId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification('Utilisateur supprimé', 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors de la suppression', 'error');
+                }
+            });
+        }
+    }
+    
+    function sortUsers(criteria) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort', criteria);
+        window.location = url;
+    }
+    
+    function exportUsers() {
+        window.open('/admin/users/export/', '_blank');
+    }
+    
+    function importUsers() {
+        // Ouvrir une modal d'import ou rediriger vers une page d'import
+        ORIS.showNotification('Fonctionnalité d\'import à venir', 'info');
+    }
+    
+    // Réinitialiser le modal à la fermeture
+    document.getElementById('userModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('userForm').reset();
+        document.getElementById('modalTitle').textContent = 'Nouvel utilisateur';
+        document.getElementById('userId').value = '';
+        document.getElementById('passwordSection').style.display = 'block';
+        document.getElementById('password').required = true;
+        document.getElementById('confirmPassword').required = true;
+    });
+    
+    // Gestion des permissions selon le rôle
+    document.getElementById('role').addEventListener('change', function() {
+        const role = this.value;
+        const permissions = {
+            'user': {
+                canCreateBatches: false,
+                canValidate: false,
+                canExport: false,
+                canManageUsers: false
+            },
+            'validator': {
+                canCreateBatches: true,
+                canValidate: true,
+                canExport: true,
+                canManageUsers: false
+            },
+            'admin': {
+                canCreateBatches: true,
+                canValidate: true,
+                canExport: true,
+                canManageUsers: true
+            }
+        };
+        
+        if (permissions[role]) {
+            Object.keys(permissions[role]).forEach(perm => {
+                const checkbox = document.getElementById(perm);
+                if (checkbox) {
+                    checkbox.checked = permissions[role][perm];
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+

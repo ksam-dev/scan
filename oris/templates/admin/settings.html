@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Paramètres - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .settings-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        background: var(--gradient-secondary);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .settings-section {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    
+    .settings-section:last-child {
+        border-bottom: none;
+    }
+    
+    .settings-section h5 {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 1rem;
+    }
+    
+    .form-label-oris {
+        font-weight: 500;
+        color: var(--primary-dark);
+    }
+    
+    .form-control-oris {
+        border-radius: 0.75rem;
+        border: 1px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control-oris:focus {
+        border-color: var(--primary-medium);
+        box-shadow: 0 0 0 0.25rem rgba(44, 194, 149, 0.25);
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--primary-medium);
+        border-color: var(--primary-medium);
+    }
+    
+    .btn-oris-primary {
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-oris-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .alert-oris {
+        border-radius: 0.75rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-success-oris {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+        border-color: #198754;
+    }
+    
+    .alert-danger-oris {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .alert-info-oris {
+        background-color: rgba(13, 202, 240, 0.1);
+        color: #0dcaf0;
+        border-color: #0dcaf0;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'admin_settings' %}" class="text-decoration-none">
+                <i class="fas fa-cogs me-1"></i>Administration
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-sliders-h me-1"></i>Paramètres
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="admin-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 fw-bold text-gradient mb-1">Paramètres du Système</h1>
+                <p class="text-muted mb-0">Configurez les options générales de votre application ORIS</p>
+            </div>
+            <div>
+                <button class="btn btn-oris-primary" onclick="saveSettings()">
+                    <i class="fas fa-save me-2"></i>Sauvegarder les paramètres
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panneau des paramètres -->
+    <div class="settings-panel">
+        <div class="panel-header">
+            <h5 class="fw-bold mb-0">
+                <i class="fas fa-cog me-2 text-primary"></i>
+                Paramètres Généraux
+            </h5>
+        </div>
+        
+        <form id="settingsForm">
+            <!-- Section OCR -->
+            <div class="settings-section">
+                <h5><i class="fas fa-robot me-2"></i>Paramètres OCR</h5>
+                <div class="mb-3">
+                    <label for="ocrEngine" class="form-label-oris">Moteur OCR par défaut</label>
+                    <select class="form-select form-control-oris" id="ocrEngine" name="ocr_engine">
+                        <option value="tesseract" {% if settings.OCR_ENGINE == 'tesseract' %}selected{% endif %}>Tesseract</option>
+                        <option value="google_vision" {% if settings.OCR_ENGINE == 'google_vision' %}selected{% endif %}>Google Vision AI</option>
+                        <option value="aws_textract" {% if settings.OCR_ENGINE == 'aws_textract' %}selected{% endif %}>AWS Textract</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="ocrLanguages" class="form-label-oris">Langues OCR (séparées par des virgules)</label>
+                    <input type="text" class="form-control form-control-oris" id="ocrLanguages" name="ocr_languages" 
+                           value="{{ settings.OCR_LANGUAGES|join:',' }}" placeholder="fra,eng,spa">
+                </div>
+                <div class="mb-3">
+                    <label for="confidenceThreshold" class="form-label-oris">Seuil de confiance (en %)</label>
+                    <input type="number" class="form-control form-control-oris" id="confidenceThreshold" name="confidence_threshold" 
+                           value="{{ settings.CONFIDENCE_THRESHOLD }}" min="0" max="100">
+                    <small class="form-text text-muted">Les documents avec une confiance inférieure seront signalés pour validation.</small>
+                </div>
+            </div>
+            
+            <!-- Section Upload -->
+            <div class="settings-section">
+                <h5><i class="fas fa-upload me-2"></i>Paramètres d'Upload</h5>
+                <div class="mb-3">
+                    <label for="maxFileSize" class="form-label-oris">Taille maximale des fichiers (MB)</label>
+                    <input type="number" class="form-control form-control-oris" id="maxFileSize" name="max_file_size" 
+                           value="{{ settings.MAX_FILE_SIZE_MB }}" min="1" max="500">
+                </div>
+                <div class="mb-3">
+                    <label for="allowedExtensions" class="form-label-oris">Extensions de fichiers autorisées (séparées par des virgules)</label>
+                    <input type="text" class="form-control form-control-oris" id="allowedExtensions" name="allowed_extensions" 
+                           value="{{ settings.ALLOWED_EXTENSIONS|join:',' }}" placeholder="pdf,jpg,png,tiff">
+                </div>
+            </div>
+            
+            <!-- Section Notifications -->
+            <div class="settings-section">
+                <h5><i class="fas fa-bell me-2"></i>Paramètres de Notifications</h5>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications" 
+                           {% if settings.EMAIL_NOTIFICATIONS_ENABLED %}checked{% endif %}>
+                    <label class="form-check-label" for="emailNotifications">Activer les notifications par email</label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="browserNotifications" name="browser_notifications" 
+                           {% if settings.BROWSER_NOTIFICATIONS_ENABLED %}checked{% endif %}>
+                    <label class="form-check-label" for="browserNotifications">Activer les notifications navigateur</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="batchCompletionNotify" name="batch_completion_notify" 
+                           {% if settings.BATCH_COMPLETION_NOTIFY %}checked{% endif %}>
+                    <label class="form-check-label" for="batchCompletionNotify">Notifier à la fin du traitement d'un lot</label>
+                </div>
+            </div>
+            
+            <!-- Section Sécurité -->
+            <div class="settings-section">
+                <h5><i class="fas fa-shield-alt me-2"></i>Paramètres de Sécurité</h5>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="twoFactorAuth" name="two_factor_auth" 
+                           {% if settings.TWO_FACTOR_AUTH_ENABLED %}checked{% endif %}>
+                    <label class="form-check-label" for="twoFactorAuth">Activer l'authentification à deux facteurs (2FA)</label>
+                </div>
+                <div class="mb-3">
+                    <label for="sessionTimeout" class="form-label-oris">Délai d'expiration de session (minutes)</label>
+                    <input type="number" class="form-control form-control-oris" id="sessionTimeout" name="session_timeout" 
+                           value="{{ settings.SESSION_TIMEOUT_MINUTES }}" min="5" max="1440">
+                    <small class="form-text text-muted">La session de l'utilisateur expirera après cette période d'inactivité.</small>
+                </div>
+            </div>
+            
+            <!-- Section Maintenance -->
+            <div class="settings-section">
+                <h5><i class="fas fa-tools me-2"></i>Maintenance</h5>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-warning" onclick="runMaintenanceTask('clean_old_data')">
+                        <i class="fas fa-broom me-2"></i>Nettoyer les anciennes données
+                    </button>
+                    <small class="form-text text-muted ms-3">Supprime les données archivées de plus de X jours.</small>
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-danger" onclick="runMaintenanceTask('rebuild_index')">
+                        <i class="fas fa-sync-alt me-2"></i>Reconstruire l'index de recherche
+                    </button>
+                    <small class="form-text text-muted ms-3">Peut améliorer les performances de recherche.</small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function saveSettings() {
+        const form = document.getElementById('settingsForm');
+        const formData = new FormData(form);
+        
+        // Convertir les valeurs des checkboxes en booléens
+        formData.set('email_notifications', document.getElementById('emailNotifications').checked);
+        formData.set('browser_notifications', document.getElementById('browserNotifications').checked);
+        formData.set('batch_completion_notify', document.getElementById('batchCompletionNotify').checked);
+        formData.set('two_factor_auth', document.getElementById('twoFactorAuth').checked);
+
+        fetch('/admin-panel/settings/save/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification('Paramètres sauvegardés avec succès', 'success');
+            } else {
+                ORIS.showNotification(data.message || 'Erreur lors de la sauvegarde des paramètres', 'error');
+            }
+        })
+        .catch(error => {
+            ORIS.showNotification('Erreur réseau ou serveur', 'error');
+            console.error('Error:', error);
+        });
+    }
+
+    function runMaintenanceTask(taskName) {
+        if (confirm(`Êtes-vous sûr de vouloir exécuter la tâche de maintenance '${taskName}' ?`)) {
+            fetch(`/admin-panel/settings/maintenance/${taskName}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification(`Tâche '${taskName}' exécutée avec succès: ${data.message}`, 'success');
+                } else {
+                    ORIS.showNotification(`Erreur lors de l'exécution de '${taskName}': ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                ORIS.showNotification('Erreur réseau ou serveur lors de la tâche de maintenance', 'error');
+                console.error('Error:', error);
+            });
+        }
+    }
+</script>
+{% endblock %}
+

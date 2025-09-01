@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Détail du Lot: {{ batch.name }} - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-header {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    .document-list-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    .document-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.2s ease;
+    }
+    .document-item:hover {
+        background-color: #f8f9fa;
+    }
+    .document-item:last-child {
+        border-bottom: none;
+    }
+    .doc-icon {
+        font-size: 1.5rem;
+        color: var(--primary-medium);
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.3rem 0.8rem;
+        border-radius: 50px;
+    }
+    .status-validated { background-color: rgba(25, 135, 84, 0.1); color: #198754; }
+    .status-validation_pending { background-color: rgba(255, 193, 7, 0.1); color: #b45309; }
+    .status-processing { background-color: rgba(13, 202, 240, 0.1); color: #0dcaf0; }
+    .status-failed { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Tableau de bord</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'batch_list' %}">Gestion des lots</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ batch.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête du détail -->
+    <div class="detail-header">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h1 class="h2 fw-bold text-gradient mb-1">{{ batch.name }}</h1>
+                <p class="text-muted mb-0">Créé le {{ batch.created_at|date:"d F Y" }} par {{ batch.user.get_full_name }}</p>
+            </div>
+            <div>
+                <a href="{% url 'batch_export' batch.id %}" class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Exporter le lot (CSV)
+                </a>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <!-- Statistiques du lot -->
+            <div class="col-md-3"><div class="stat-card p-3"><div class="stat-value">{{ batch.documents.count }}</div><div class="stat-label">Documents</div></div></div>
+            <div class="col-md-3"><div class="stat-card p-3"><div class="stat-value">{{ stats.total_pages }}</div><div class="stat-label">Pages</div></div></div>
+            <div class="col-md-3"><div class="stat-card p-3"><div class="stat-value">{{ stats.pending_validation }}</div><div class="stat-label">En attente</div></div></div>
+            <div class="col-md-3"><div class="stat-card p-3"><div class="stat-value">{{ stats.avg_confidence|floatformat:2 }}%</div><div class="stat-label">Précision Moy.</div></div></div>
+        </div>
+    </div>
+
+    <!-- Liste des documents -->
+    <div class="document-list-panel">
+        <div class="card-header">
+            <h5 class="mb-0">Documents dans ce lot</h5>
+        </div>
+        <div class="list-group list-group-flush">
+            {% for doc in documents %}
+            <a href="{% url 'document_view' doc.id %}" class="list-group-item list-group-item-action document-item">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-file-alt doc-icon me-3"></i>
+                        <div>
+                            <h6 class="mb-0">{{ doc.original_filename }}</h6>
+                            <small class="text-muted">{{ doc.total_pages }} page(s) • {{ doc.file_size|filesizeformat }}</small>
+                        </div>
+                    </div>
+                    <span class="status-badge status-{{ doc.status }}">{{ doc.get_status_display }}</span>
+                </div>
+            </a>
+            {% empty %}
+            <div class="p-4 text-center text-muted">
+                Aucun document trouvé dans ce lot.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

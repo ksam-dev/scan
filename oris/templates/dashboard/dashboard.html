@@ -1,0 +1,540 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de bord - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: white;
+        border-radius: 1.5rem;
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .stats-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--background-dark);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-label {
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-change {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .stats-change.positive {
+        color: #198754;
+    }
+    
+    .stats-change.negative {
+        color: #dc3545;
+    }
+    
+    .recent-activity {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .activity-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+    
+    .activity-item:hover {
+        background: var(--accent-mint);
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        color: white;
+        margin-right: 1rem;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        height: 400px;
+    }
+    
+    .quick-actions {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .action-button {
+        background: white;
+        border: none;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: var(--background-dark);
+        display: block;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        color: var(--background-dark);
+    }
+    
+    .action-button i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--primary-medium);
+    }
+    
+    .progress-ring {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .progress-ring-circle {
+        stroke: var(--primary-medium);
+        stroke-width: 8;
+        fill: transparent;
+        stroke-dasharray: 283;
+        stroke-dashoffset: 283;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 0.5s ease-in-out;
+    }
+    
+    .progress-ring-bg {
+        stroke: #e9ecef;
+        stroke-width: 8;
+        fill: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Tableau de bord
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête du dashboard -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold text-gradient mb-1">Tableau de bord</h1>
+                    <p class="text-muted mb-0">
+                        Bienvenue, {{ user.get_full_name|default:user.username }} • 
+                        <span id="currentDate"></span>
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-oris-primary" data-bs-toggle="modal" data-bs-target="#quickUploadModal">
+                        <i class="fas fa-plus me-2"></i>
+                        Nouveau lot
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques principales -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="stats-icon" style="background: var(--gradient-primary);">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="stats-number">{{ stats.total_batches|default:0 }}</div>
+                <div class="stats-label">Lots traités</div>
+                <div class="stats-change positive">
+                    <i class="fas fa-arrow-up me-1"></i>
+                    +12% ce mois
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #00DF82, #2CC295);">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stats-number">{{ stats.total_documents|default:0 }}</div>
+                <div class="stats-label">Documents numérisés</div>
+                <div class="stats-change positive">
+                    <i class="fas fa-arrow-up me-1"></i>
+                    +8% ce mois
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #FFE4D0, #AFF9C7);">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stats-number">{{ stats.pending_validation|default:0 }}</div>
+                <div class="stats-label">En attente de validation</div>
+                <div class="stats-change negative">
+                    <i class="fas fa-arrow-down me-1"></i>
+                    -5% ce mois
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #03624C, #042222);">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stats-number">{{ stats.accuracy_rate|default:95 }}%</div>
+                <div class="stats-label">Précision OCR</div>
+                <div class="stats-change positive">
+                    <i class="fas fa-arrow-up me-1"></i>
+                    +2% ce mois
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Graphiques et activité récente -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-4">
+            <div class="chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Activité des 30 derniers jours</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="chartPeriod" id="period7" checked>
+                        <label class="btn btn-outline-primary" for="period7">7j</label>
+                        
+                        <input type="radio" class="btn-check" name="chartPeriod" id="period30">
+                        <label class="btn btn-outline-primary" for="period30">30j</label>
+                        
+                        <input type="radio" class="btn-check" name="chartPeriod" id="period90">
+                        <label class="btn btn-outline-primary" for="period90">90j</label>
+                    </div>
+                </div>
+                <canvas id="activityChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="recent-activity">
+                <div class="p-3 border-bottom">
+                    <h5 class="fw-bold mb-0">Activité récente</h5>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="d-flex align-items-center">
+                        <div class="activity-icon" style="background: var(--primary-bright);">
+                            <i class="fas fa-upload"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">Nouveau lot uploadé</div>
+                            <small class="text-muted">Factures Q4 2024 • Il y a 2 minutes</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="d-flex align-items-center">
+                        <div class="activity-icon" style="background: var(--primary-medium);">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">Validation terminée</div>
+                            <small class="text-muted">Contrats clients • Il y a 15 minutes</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="d-flex align-items-center">
+                        <div class="activity-icon" style="background: var(--primary-dark);">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">Traitement OCR</div>
+                            <small class="text-muted">Documents RH • Il y a 1 heure</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="d-flex align-items-center">
+                        <div class="activity-icon" style="background: #6c757d;">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">Export CSV</div>
+                            <small class="text-muted">Rapport mensuel • Il y a 2 heures</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-3 border-top text-center">
+                    <a href="{% url 'archive' %}" class="text-decoration-none">
+                        Voir tout l'historique <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions rapides et progression -->
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="quick-actions">
+                <h5 class="fw-bold mb-4">Actions rapides</h5>
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'batch_upload' %}" class="action-button">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <div class="fw-semibold">Nouveau lot</div>
+                            <small class="text-muted">Uploader des documents</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'validation_queue' %}" class="action-button">
+                            <i class="fas fa-check-circle"></i>
+                            <div class="fw-semibold">Valider</div>
+                            <small class="text-muted">File de validation</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'batch_list' %}" class="action-button">
+                            <i class="fas fa-search"></i>
+                            <div class="fw-semibold">Rechercher</div>
+                            <small class="text-muted">Parcourir les lots</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'archive' %}" class="action-button">
+                            <i class="fas fa-download"></i>
+                            <div class="fw-semibold">Exporter</div>
+                            <small class="text-muted">Télécharger les données</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card-oris">
+                <div class="card-header">
+                    <h5 class="fw-bold mb-0">Progression du mois</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="position-relative d-inline-block mb-3">
+                        <svg class="progress-ring" viewBox="0 0 100 100">
+                            <circle class="progress-ring-bg" cx="50" cy="50" r="45"></circle>
+                            <circle class="progress-ring-circle" cx="50" cy="50" r="45" 
+                                data-progress="{{ stats.monthly_progress|default:75 }}"></circle>
+                        </svg>
+                        <div class="position-absolute top-50 start-50 translate-middle">
+                            <div class="h3 fw-bold text-primary mb-0">{{ stats.monthly_progress|default:75 }}%</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="fw-semibold">{{ stats.monthly_processed|default:1250 }} documents traités</div>
+                        <small class="text-muted">Objectif : {{ stats.monthly_target|default:1500 }} documents</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-gradient-primary" role="progressbar" 
+                             style="width: {{ stats.monthly_progress|default:75 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'upload rapide -->
+<div class="modal fade" id="quickUploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-cloud-upload-alt me-2 text-primary"></i>
+                    Upload rapide
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="drag-drop-zone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h5 class="fw-bold mt-3 mb-2">Glissez vos fichiers ici</h5>
+                    <p class="text-muted mb-3">ou cliquez pour sélectionner</p>
+                    <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                    <div class="file-list" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-oris-outline" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-oris-primary">Commencer le traitement</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Date actuelle
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    // Graphique d'activité
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+            datasets: [{
+                label: 'Documents traités',
+                data: [65, 59, 80, 81, 56, 55, 40],
+                borderColor: '#2CC295',
+                backgroundColor: 'rgba(44, 194, 149, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#2CC295',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    },
+                    ticks: {
+                        color: '#6c757d'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#6c757d'
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    hoverRadius: 8
+                }
+            }
+        }
+    });
+    
+    // Animation des statistiques au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const statsNumbers = document.querySelectorAll('.stats-number');
+        
+        statsNumbers.forEach(stat => {
+            const finalValue = parseInt(stat.textContent);
+            let currentValue = 0;
+            const increment = finalValue / 50;
+            
+            const timer = setInterval(() => {
+                currentValue += increment;
+                if (currentValue >= finalValue) {
+                    stat.textContent = finalValue;
+                    clearInterval(timer);
+                } else {
+                    stat.textContent = Math.floor(currentValue);
+                }
+            }, 30);
+        });
+    });
+    // Animation des cercles de progression
+document.addEventListener('DOMContentLoaded', function() {
+    const progressCircles = document.querySelectorAll('.progress-ring-circle');
+    
+    progressCircles.forEach(circle => {
+        const progress = parseInt(circle.getAttribute('data-progress'));
+        const dashoffset = 283 - (283 * progress / 100);
+        circle.style.strokeDashoffset = dashoffset;
+    });
+});
+</script>
+{% endblock %}
+

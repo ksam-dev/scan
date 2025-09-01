@@ -1,0 +1,593 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon Profil - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .avatar-upload {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 36px;
+        height: 36px;
+        background: var(--primary-medium);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 3px solid white;
+    }
+    
+    .avatar-upload:hover {
+        background: var(--primary-dark);
+        transform: scale(1.1);
+    }
+    
+    .profile-info {
+        text-align: center;
+    }
+    
+    .profile-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--background-dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .profile-role {
+        color: #6c757d;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .profile-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-medium);
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .profile-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .panel-header {
+        background: var(--gradient-secondary);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .panel-body {
+        padding: 1.5rem;
+    }
+    
+    .form-label-oris {
+        font-weight: 500;
+        color: var(--primary-dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control-oris {
+        border-radius: 0.75rem;
+        border: 1px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control-oris:focus {
+        border-color: var(--primary-medium);
+        box-shadow: 0 0 0 0.25rem rgba(44, 194, 149, 0.25);
+    }
+    
+    .btn-oris-primary {
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-oris-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .btn-oris-outline {
+        background: transparent;
+        border: 2px solid var(--primary-medium);
+        color: var(--primary-medium);
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-oris-outline:hover {
+        background: var(--primary-medium);
+        color: white;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        background: var(--accent-mint);
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+    }
+    
+    .activity-content {
+        flex: 1;
+    }
+    
+    .activity-title {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .activity-time {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .preferences-section {
+        margin-bottom: 2rem;
+    }
+    
+    .preferences-section h6 {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 1rem;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--primary-medium);
+        border-color: var(--primary-medium);
+    }
+    
+    @media (max-width: 768px) {
+        .profile-stats {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            font-size: 2.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-user me-1"></i>Mon Profil
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Colonne de gauche - Profil -->
+        <div class="col-lg-4 mb-4">
+            <!-- En-tête du profil -->
+            <div class="profile-header">
+                <div class="profile-info">
+                    <div class="profile-avatar">
+                        {% if user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" alt="Avatar">
+                        {% else %}
+                        {{ user.first_name.0|default:user.username.0 }}{{ user.last_name.0 }}
+                        {% endif %}
+                        <div class="avatar-upload" onclick="document.getElementById('avatarInput').click()">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <input type="file" id="avatarInput" style="display: none;" accept="image/*" onchange="uploadAvatar(this)">
+                    </div>
+                    
+                    <div class="profile-name">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="profile-role">
+                        {% if user.is_superuser %}
+                        <i class="fas fa-crown me-1"></i>Administrateur
+                        {% elif user.groups.all %}
+                        <i class="fas fa-check-circle me-1"></i>Validateur
+                        {% else %}
+                        <i class="fas fa-user me-1"></i>Utilisateur
+                        {% endif %}
+                    </div>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user.profile.documents_validated|default:0 }}</span>
+                            <span class="stat-label">Documents validés</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user.profile.batches_created|default:0 }}</span>
+                            <span class="stat-label">Lots créés</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user.profile.accuracy_rate|default:0 }}%</span>
+                            <span class="stat-label">Précision</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activité récente -->
+            <div class="profile-panel">
+                <div class="panel-header">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-clock me-2 text-primary"></i>
+                        Activité récente
+                    </h5>
+                </div>
+                <div class="panel-body">
+                    {% for activity in recent_activities %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-{{ activity.icon }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ activity.title }}</div>
+                            <div class="activity-time">{{ activity.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <p>Aucune activité récente</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Colonne de droite - Informations et paramètres -->
+        <div class="col-lg-8">
+            <!-- Informations personnelles -->
+            <div class="profile-panel">
+                <div class="panel-header">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-user-edit me-2 text-primary"></i>
+                        Informations personnelles
+                    </h5>
+                </div>
+                <div class="panel-body">
+                    <form id="profileForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label-oris">Prénom</label>
+                                <input type="text" class="form-control form-control-oris" id="firstName" 
+                                       value="{{ user.first_name }}" name="first_name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label-oris">Nom</label>
+                                <input type="text" class="form-control form-control-oris" id="lastName" 
+                                       value="{{ user.last_name }}" name="last_name">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label-oris">Email</label>
+                            <input type="email" class="form-control form-control-oris" id="email" 
+                                   value="{{ user.email }}" name="email">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label-oris">Téléphone</label>
+                            <input type="tel" class="form-control form-control-oris" id="phone" 
+                                   value="{{ user.profile.phone|default:'' }}" name="phone">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="organization" class="form-label-oris">Organisation</label>
+                            <input type="text" class="form-control form-control-oris" id="organization" 
+                                   value="{{ user.profile.organization|default:'' }}" name="organization">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bio" class="form-label-oris">Bio</label>
+                            <textarea class="form-control form-control-oris" id="bio" rows="3" 
+                                      name="bio">{{ user.profile.bio|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-oris-primary" onclick="saveProfile()">
+                                <i class="fas fa-save me-2"></i>Sauvegarder
+                            </button>
+                            <button type="button" class="btn btn-oris-outline" onclick="resetForm()">
+                                <i class="fas fa-undo me-2"></i>Annuler
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Préférences -->
+            <div class="profile-panel">
+                <div class="panel-header">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-cog me-2 text-primary"></i>
+                        Préférences
+                    </h5>
+                </div>
+                <div class="panel-body">
+                    <form id="preferencesForm">
+                        <div class="preferences-section">
+                            <h6>Notifications</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="emailNotifications" 
+                                       name="email_notifications" {% if user.profile.email_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="emailNotifications">
+                                    Recevoir les notifications par email
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="browserNotifications" 
+                                       name="browser_notifications" {% if user.profile.browser_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="browserNotifications">
+                                    Recevoir les notifications dans le navigateur
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="batchCompletionNotify" 
+                                       name="batch_completion_notify" {% if user.profile.batch_completion_notify %}checked{% endif %}>
+                                <label class="form-check-label" for="batchCompletionNotify">
+                                    Notifier à la fin du traitement d'un lot
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="preferences-section">
+                            <h6>Interface</h6>
+                            <div class="mb-3">
+                                <label for="language" class="form-label-oris">Langue</label>
+                                <select class="form-select form-control-oris" id="language" name="language">
+                                    <option value="fr" {% if user.profile.language == 'fr' %}selected{% endif %}>Français</option>
+                                    <option value="en" {% if user.profile.language == 'en' %}selected{% endif %}>English</option>
+                                    <option value="es" {% if user.profile.language == 'es' %}selected{% endif %}>Español</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="timezone" class="form-label-oris">Fuseau horaire</label>
+                                <select class="form-select form-control-oris" id="timezone" name="timezone">
+                                    <option value="Europe/Paris" {% if user.profile.timezone == 'Europe/Paris' %}selected{% endif %}>Europe/Paris</option>
+                                    <option value="America/New_York" {% if user.profile.timezone == 'America/New_York' %}selected{% endif %}>America/New_York</option>
+                                    <option value="Asia/Tokyo" {% if user.profile.timezone == 'Asia/Tokyo' %}selected{% endif %}>Asia/Tokyo</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-oris-primary" onclick="savePreferences()">
+                            <i class="fas fa-save me-2"></i>Sauvegarder les préférences
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Sécurité -->
+            <div class="profile-panel">
+                <div class="panel-header">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-shield-alt me-2 text-primary"></i>
+                        Sécurité
+                    </h5>
+                </div>
+                <div class="panel-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">Mot de passe</h6>
+                            <small class="text-muted">Dernière modification: {{ user.profile.password_changed_at|date:"d/m/Y"|default:"Jamais" }}</small>
+                        </div>
+                        <button class="btn btn-oris-outline" onclick="changePassword()">
+                            <i class="fas fa-key me-2"></i>Changer
+                        </button>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">Authentification à deux facteurs</h6>
+                            <small class="text-muted">Sécurisez votre compte avec 2FA</small>
+                        </div>
+                        <button class="btn btn-oris-outline" onclick="setup2FA()">
+                            <i class="fas fa-mobile-alt me-2"></i>Configurer
+                        </button>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Sessions actives</h6>
+                            <small class="text-muted">Gérez vos sessions de connexion</small>
+                        </div>
+                        <button class="btn btn-oris-outline" onclick="manageSessions()">
+                            <i class="fas fa-list me-2"></i>Voir tout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function uploadAvatar(input) {
+        if (input.files && input.files[0]) {
+            const formData = new FormData();
+            formData.append('avatar', input.files[0]);
+            
+            fetch('/profile/upload-avatar/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification('Avatar mis à jour', 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification(data.message || 'Erreur lors de l\'upload', 'error');
+                }
+            });
+        }
+    }
+    
+    function saveProfile() {
+        const form = document.getElementById('profileForm');
+        const formData = new FormData(form);
+        
+        fetch('/profile/update/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification('Profil mis à jour', 'success');
+            } else {
+                ORIS.showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+            }
+        });
+    }
+    
+    function savePreferences() {
+        const form = document.getElementById('preferencesForm');
+        const formData = new FormData(form);
+        
+        // Convertir les checkboxes en booléens
+        formData.set('email_notifications', document.getElementById('emailNotifications').checked);
+        formData.set('browser_notifications', document.getElementById('browserNotifications').checked);
+        formData.set('batch_completion_notify', document.getElementById('batchCompletionNotify').checked);
+        
+        fetch('/profile/preferences/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification('Préférences sauvegardées', 'success');
+            } else {
+                ORIS.showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+            }
+        });
+    }
+    
+    function resetForm() {
+        document.getElementById('profileForm').reset();
+        ORIS.showNotification('Formulaire réinitialisé', 'info');
+    }
+    
+    function changePassword() {
+        // Ouvrir une modal ou rediriger vers une page de changement de mot de passe
+        window.location.href = '/profile/change-password/';
+    }
+    
+    function setup2FA() {
+        // Ouvrir une modal ou rediriger vers la configuration 2FA
+        ORIS.showNotification('Configuration 2FA à venir', 'info');
+    }
+    
+    function manageSessions() {
+        // Ouvrir une modal ou rediriger vers la gestion des sessions
+        ORIS.showNotification('Gestion des sessions à venir', 'info');
+    }
+</script>
+{% endblock %}
+

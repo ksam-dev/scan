@@ -1,0 +1,670 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Organisations - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .stat-card.total { border-left-color: var(--primary-medium); }
+    .stat-card.active { border-left-color: #198754; }
+    .stat-card.inactive { border-left-color: #6c757d; }
+    .stat-card.admins { border-left-color: #e83e8c; }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.25rem;
+        color: white;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .organizations-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        background: var(--gradient-secondary);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .organization-card {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .organization-card:hover {
+        background: var(--accent-mint);
+    }
+    
+    .organization-card:last-child {
+        border-bottom: none;
+    }
+    
+    .organization-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .organization-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    
+    .organization-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .organization-details {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .organization-name {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .organization-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .organization-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-active {
+        background: rgba(25, 135, 84, 0.2);
+        color: #198754;
+    }
+    
+    .status-inactive {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+    }
+    
+    .organization-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+    }
+    
+    .action-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .action-btn.edit {
+        background: var(--primary-medium);
+        color: white;
+    }
+    
+    .action-btn.edit:hover {
+        background: var(--primary-dark);
+    }
+    
+    .action-btn.delete {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.delete:hover {
+        background: #c82333;
+    }
+    
+    .action-btn.toggle {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .action-btn.toggle:hover {
+        background: #495057;
+    }
+    
+    .filters-bar {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .search-box {
+        position: relative;
+        max-width: 300px;
+    }
+    
+    .search-box input {
+        padding-left: 2.5rem;
+    }
+    
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    
+    .organization-modal .modal-content {
+        border-radius: 1.5rem;
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .organization-modal .modal-header {
+        background: var(--gradient-secondary);
+        border-bottom: 1px solid #e9ecef;
+        border-radius: 1.5rem 1.5rem 0 0;
+    }
+    
+    @media (max-width: 768px) {
+        .organization-info {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+        
+        .organization-meta {
+            justify-content: center;
+        }
+        
+        .organization-actions {
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .filters-bar {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'admin_settings' %}" class="text-decoration-none">
+                <i class="fas fa-cogs me-1"></i>Administration
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-building me-1"></i>Organisations
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="admin-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 fw-bold text-gradient mb-1">Gestion des Organisations</h1>
+                <p class="text-muted mb-0">Administrez les organisations et leurs accès au système</p>
+            </div>
+            <div>
+                <button class="btn btn-oris-primary" data-bs-toggle="modal" data-bs-target="#organizationModal">
+                    <i class="fas fa-plus me-2"></i>Nouvelle organisation
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card total">
+            <div class="stat-icon" style="background: var(--gradient-primary);">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_organizations|default:0 }}</div>
+            <div class="stat-label">Organisations total</div>
+        </div>
+        
+        <div class="stat-card active">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #198754, #20c997);">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-number">{{ stats.active_organizations|default:0 }}</div>
+            <div class="stat-label">Actives</div>
+        </div>
+        
+        <div class="stat-card inactive">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #6c757d, #adb5bd);">
+                <i class="fas fa-minus-circle"></i>
+            </div>
+            <div class="stat-number">{{ stats.inactive_organizations|default:0 }}</div>
+            <div class="stat-label">Inactives</div>
+        </div>
+        
+        <div class="stat-card admins">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #e83e8c, #fd7e14);">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-number">{{ stats.total_users_in_orgs|default:0 }}</div>
+            <div class="stat-label">Utilisateurs liés</div>
+        </div>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filters-bar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <div class="search-box">
+                <input type="text" class="form-control form-control-oris" 
+                       placeholder="Rechercher une organisation..." id="organizationSearch">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            
+            <select class="form-select form-control-oris" id="statusFilter" style="width: auto;">
+                <option value="">Tous les statuts</option>
+                <option value="active">Actives</option>
+                <option value="inactive">Inactives</option>
+            </select>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-oris-outline btn-sm" onclick="exportOrganizations()">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+            <button class="btn btn-oris-outline btn-sm" onclick="importOrganizations()">
+                <i class="fas fa-upload me-1"></i>Importer
+            </button>
+        </div>
+    </div>
+    
+    <!-- Liste des organisations -->
+    <div class="organizations-panel">
+        <div class="panel-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    Organisations
+                    <span class="badge bg-primary ms-2" id="organizationCount">{{ organizations.count }}</span>
+                </h5>
+                
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="sortOrganizations('name')">
+                        <i class="fas fa-sort-alpha-down me-1"></i>Nom
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="sortOrganizations('date')">
+                        <i class="fas fa-calendar me-1"></i>Date
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="sortOrganizations('users')">
+                        <i class="fas fa-users me-1"></i>Utilisateurs
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="organizationsList">
+            {% for org in organizations %}
+            <div class="organization-card" data-org-id="{{ org.id }}">
+                <div class="organization-info">
+                    <div class="organization-logo">
+                        {% if org.logo_url %}
+                        <img src="{{ org.logo_url }}" alt="{{ org.name }} Logo">
+                        {% else %}
+                        {{ org.name.0 }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="organization-details">
+                        <div class="organization-name">
+                            {{ org.name }}
+                        </div>
+                        
+                        <div class="organization-meta">
+                            <span>
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                {{ org.location }}
+                            </span>
+                            <span>
+                                <i class="fas fa-users me-1"></i>
+                                {{ org.user_count }} utilisateurs
+                            </span>
+                            <span>
+                                <i class="fas fa-file-alt me-1"></i>
+                                {{ org.document_count }} documents
+                            </span>
+                            <span>
+                                <i class="fas fa-calendar me-1"></i>
+                                Créée le {{ org.created_at|date:"d/m/Y" }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        <span class="organization-status status-{% if org.is_active %}active{% else %}inactive{% endif %}">
+                            {% if org.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                        
+                        <div class="organization-actions">
+                            <button class="action-btn edit" onclick="editOrganization({{ org.id }})" 
+                                    title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            
+                            <button class="action-btn toggle" 
+                                    onclick="toggleOrganizationStatus({{ org.id }}, {{ org.is_active|yesno:'false,true' }})"
+                                    title="{% if org.is_active %}Désactiver{% else %}Activer{% endif %}">
+                                <i class="fas fa-{% if org.is_active %}pause{% else %}play{% endif %}"></i>
+                            </button>
+                            
+                            <button class="action-btn delete" onclick="deleteOrganization({{ org.id }}, '{{ org.name }}')"
+                                    title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center p-5">
+                <i class="fas fa-building fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucune organisation trouvée</h5>
+                <p class="text-muted">Commencez par créer votre première organisation.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Organisation -->
+<div class="modal fade organization-modal" id="organizationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-plus me-2 text-primary"></i>
+                    <span id="modalTitle">Nouvelle Organisation</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="organizationForm">
+                    <input type="hidden" id="organizationId" name="organization_id">
+                    
+                    <div class="mb-3">
+                        <label for="organizationName" class="form-label-oris">Nom de l'organisation *</label>
+                        <input type="text" class="form-control form-control-oris" 
+                               id="organizationName" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="organizationLocation" class="form-label-oris">Localisation</label>
+                        <input type="text" class="form-control form-control-oris" 
+                               id="organizationLocation" name="location">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="organizationContact" class="form-label-oris">Contact Email</label>
+                        <input type="email" class="form-control form-control-oris" 
+                               id="organizationContact" name="contact_email">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="organizationLogo" class="form-label-oris">Logo</label>
+                        <input type="file" class="form-control form-control-oris" 
+                               id="organizationLogo" name="logo">
+                        <small class="form-text text-muted">Format: PNG, JPG. Taille max: 2MB.</small>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                        <label class="form-check-label" for="isActive">
+                            Organisation active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-oris-outline" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-oris-primary" onclick="saveOrganization()">
+                    <i class="fas fa-save me-2"></i>Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Recherche en temps réel
+    document.getElementById('organizationSearch').addEventListener('input', function() {
+        filterOrganizations();
+    });
+    
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        filterOrganizations();
+    });
+    
+    function filterOrganizations() {
+        const search = document.getElementById('organizationSearch').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const organizationCards = document.querySelectorAll('.organization-card');
+        let visibleCount = 0;
+        
+        organizationCards.forEach(card => {
+            const orgName = card.querySelector('.organization-name').textContent.toLowerCase();
+            const orgStatus = card.querySelector('.organization-status').classList.contains('status-active') ? 'active' : 'inactive';
+            
+            const matchesSearch = orgName.includes(search);
+            const matchesStatus = !statusFilter || orgStatus === statusFilter;
+            
+            if (matchesSearch && matchesStatus) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('organizationCount').textContent = visibleCount;
+    }
+    
+    // Gestion des organisations
+    function editOrganization(orgId) {
+        fetch(`/admin-panel/organizations/${orgId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const org = data.organization;
+                
+                document.getElementById('modalTitle').textContent = 'Modifier l\'organisation';
+                document.getElementById('organizationId').value = org.id;
+                document.getElementById('organizationName').value = org.name;
+                document.getElementById('organizationLocation').value = org.location;
+                document.getElementById('organizationContact').value = org.contact_email;
+                document.getElementById('isActive').checked = org.is_active;
+                
+                new bootstrap.Modal(document.getElementById('organizationModal')).show();
+            }
+        });
+    }
+    
+    function saveOrganization() {
+        const form = document.getElementById('organizationForm');
+        const formData = new FormData(form);
+        const orgId = document.getElementById('organizationId').value;
+        
+        const url = orgId ? `/admin-panel/organizations/${orgId}/update/` : '/admin-panel/organizations/create/';
+        const method = orgId ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification(orgId ? 'Organisation modifiée' : 'Organisation créée', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('organizationModal')).hide();
+                location.reload();
+            } else {
+                ORIS.showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+            }
+        });
+    }
+    
+    function toggleOrganizationStatus(orgId, activate) {
+        const action = activate ? 'activer' : 'désactiver';
+        
+        if (confirm(`Êtes-vous sûr de vouloir ${action} cette organisation ?`)) {
+            fetch(`/admin-panel/organizations/${orgId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    is_active: activate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification(`Organisation ${activate ? 'activée' : 'désactivée'}`, 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors de la modification', 'error');
+                }
+            });
+        }
+    }
+    
+    function deleteOrganization(orgId, orgName) {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer l\'organisation "${orgName}" ? Cette action est irréversible.`)) {
+            fetch(`/admin-panel/organizations/${orgId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification('Organisation supprimée', 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors de la suppression', 'error');
+                }
+            });
+        }
+    }
+    
+    function sortOrganizations(criteria) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort', criteria);
+        window.location = url;
+    }
+    
+    function exportOrganizations() {
+        window.open('/admin-panel/organizations/export/', '_blank');
+    }
+    
+    function importOrganizations() {
+        ORIS.showNotification('Fonctionnalité d\'import à venir', 'info');
+    }
+    
+    // Réinitialiser le modal à la fermeture
+    document.getElementById('organizationModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('organizationForm').reset();
+        document.getElementById('modalTitle').textContent = 'Nouvelle Organisation';
+        document.getElementById('organizationId').value = '';
+    });
+</script>
+{% endblock %}
+

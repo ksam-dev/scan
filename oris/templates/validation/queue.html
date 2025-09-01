@@ -1,0 +1,860 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}File de validation - ORIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Votre CSS existant reste inchangé */
+    .filters-panel {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-overview {
+        background: var(--gradient-secondary);
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.25rem;
+        color: white;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .document-queue {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    
+    .queue-header {
+        background: var(--gradient-secondary);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .queue-item {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .queue-item:hover {
+        background: var(--accent-mint);
+        transform: translateX(4px);
+    }
+    
+    .queue-item:last-child {
+        border-bottom: none;
+    }
+    
+    .queue-item.selected {
+        background: rgba(44, 194, 149, 0.1);
+        border-left: 4px solid var(--primary-medium);
+    }
+    
+    .document-preview {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+    }
+    
+    .preview-thumbnail {
+        width: 80px;
+        height: 100px;
+        border-radius: 0.75rem;
+        object-fit: cover;
+        box-shadow: var(--shadow-sm);
+        flex-shrink: 0;
+    }
+    
+    .document-details {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .document-title {
+        font-weight: 600;
+        color: var(--background-dark);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .document-meta {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .confidence-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .confidence-bar {
+        flex: 1;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        max-width: 200px;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    
+    .confidence-high { background: #198754; }
+    .confidence-medium { background: #ffc107; }
+    .confidence-low { background: #dc3545; }
+    
+    .document-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    .action-btn.primary {
+        background: var(--primary-medium);
+        color: white;
+    }
+    
+    .action-btn.primary:hover {
+        background: var(--primary-dark);
+        color: white;
+    }
+    
+    .action-btn.secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .action-btn.secondary:hover {
+        background: #495057;
+        color: white;
+    }
+    
+    .priority-indicator {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .priority-urgent {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+    
+    .priority-high {
+        background: rgba(255, 193, 7, 0.2);
+        color: #b45309;
+    }
+    
+    .priority-normal {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+    }
+    
+    .bulk-actions {
+        background: var(--gradient-secondary);
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e9ecef;
+        display: none;
+    }
+    
+    .bulk-actions.show {
+        display: block;
+    }
+    
+    .validator-assignment {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .validator-card {
+        background: var(--gradient-secondary);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .validator-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .validator-card.selected {
+        border-color: var(--primary-medium);
+        background: rgba(44, 194, 149, 0.1);
+    }
+    
+    .validator-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .validator-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .validator-details {
+        flex: 1;
+    }
+    
+    .validator-name {
+        font-weight: 600;
+        color: var(--background-dark);
+    }
+    
+    .validator-stats {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .empty-queue {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-queue i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-medium);
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .document-preview {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .preview-thumbnail {
+            width: 100%;
+            height: 120px;
+        }
+        
+        .document-meta {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .document-actions {
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-tachometer-alt me-1"></i>Tableau de bord
+            </a>
+        </li>
+        <li class="breadcrumb-item active">
+            <i class="fas fa-check-circle me-1"></i>File de validation
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold text-gradient mb-1">File de validation</h1>
+                    <p class="text-muted mb-0">Validez et corrigez les documents traités par OCR</p>
+                </div>
+                <div>
+                    <button class="btn btn-oris-primary" onclick="startBulkValidation()">
+                        <i class="fas fa-tasks me-2"></i>Validation en lot
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="stats-overview">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--gradient-primary);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-number">{{ stats.pending_validation }}</div>
+                    <div class="stat-label">En attente</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #198754, #20c997);">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="stat-number">{{ stats.validated_today }}</div>
+                    <div class="stat-label">Validés aujourd'hui</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #dc3545, #fd7e14);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-number">{{ stats.low_confidence }}</div>
+                    <div class="stat-label">Faible confiance</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #6f42c1, #e83e8c);">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-number">{{ stats.assigned_to_me }}</div>
+                    <div class="stat-label">Assignés à moi</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Filtres et assignation -->
+        <div class="col-lg-3 mb-4">
+            <!-- Filtres -->
+            <div class="filters-panel">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-filter me-2 text-primary"></i>
+                    Filtres
+                </h5>
+                
+                <form method="get" id="filtersForm">
+                    <div class="mb-3">
+                        <label for="confidence" class="form-label-oris">Confiance</label>
+                        <select class="form-select form-control-oris" id="confidence" name="confidence">
+                            <option value="">Toutes</option>
+                            <option value="low" {% if request.GET.confidence == 'low' %}selected{% endif %}>< 70%</option>
+                            <option value="medium" {% if request.GET.confidence == 'medium' %}selected{% endif %}>70-90%</option>
+                            <option value="high" {% if request.GET.confidence == 'high' %}selected{% endif %}>≥ 90%</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="priority" class="form-label-oris">Priorité</label>
+                        <select class="form-select form-control-oris" id="priority" name="priority">
+                            <option value="">Toutes</option>
+                            <option value="urgent" {% if request.GET.priority == 'urgent' %}selected{% endif %}>Urgente</option>
+                            <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>Élevée</option>
+                            <option value="normal" {% if request.GET.priority == 'normal' %}selected{% endif %}>Normale</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="document_type" class="form-label-oris">Type</label>
+                        <select class="form-select form-control-oris" id="document_type" name="document_type">
+                            <option value="">Tous</option>
+                            <option value="pdf" {% if request.GET.document_type == 'pdf' %}selected{% endif %}>PDF</option>
+                            <option value="image" {% if request.GET.document_type == 'image' %}selected{% endif %}>Images</option>
+                            <option value="scan" {% if request.GET.document_type == 'scan' %}selected{% endif %}>Scans</option>
+                            <option value="text" {% if request.GET.document_type == 'text' %}selected{% endif %}>Textes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="batch" class="form-label-oris">Lot</label>
+                        <select class="form-select form-control-oris" id="batch" name="batch">
+                            <option value="">Tous les lots</option>
+                            {% for batch in batches %}
+                            <option value="{{ batch.id }}" {% if request.GET.batch == batch.id|stringformat:"s" %}selected{% endif %}>
+                                {{ batch.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label-oris">Assigné à</label>
+                        <select class="form-select form-control-oris" id="assigned_to" name="assigned_to">
+                            <option value="">Tous</option>
+                            <option value="me" {% if request.GET.assigned_to == 'me' %}selected{% endif %}>Moi</option>
+                            <option value="unassigned" {% if request.GET.assigned_to == 'unassigned' %}selected{% endif %}>Non assigné</option>
+                            {% for validator in validators %}
+                            <option value="{{ validator.id }}" {% if request.GET.assigned_to == validator.id|stringformat:"s" %}selected{% endif %}>
+                                {{ validator.get_full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-oris-primary w-100 mb-2">
+                        <i class="fas fa-search me-2"></i>Appliquer
+                    </button>
+                    <button type="button" class="btn btn-oris-outline w-100" onclick="clearFilters()">
+                        <i class="fas fa-times me-2"></i>Effacer
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Assignation de validateur -->
+            <div class="validator-assignment">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-user-check me-2 text-primary"></i>
+                    Assigner à
+                </h5>
+                
+                <div id="validatorsList">
+                    {% for validator in validators %}
+                    <div class="validator-card" data-validator="{{ validator.id }}">
+                        <div class="validator-info">
+                            <div class="validator-avatar">
+                                {{ validator.first_name.0 }}{{ validator.last_name.0 }}
+                            </div>
+                            <div class="validator-details">
+                                <div class="validator-name">{{ validator.get_full_name }}</div>
+                                <div class="validator-stats">
+                                    {{ validator.pending_count }} en cours • 
+                                    {{ validator.validated_today }} validés
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <button class="btn btn-oris-primary w-100" onclick="assignSelected()" id="assignBtn" disabled>
+                    <i class="fas fa-user-plus me-2"></i>Assigner les sélectionnés
+                </button>
+            </div>
+        </div>
+        
+        <!-- Liste des documents -->
+        <div class="col-lg-9">
+            <div class="document-queue">
+                <div class="queue-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">
+                            Documents en attente de validation
+                            <span class="badge bg-primary ms-2">{{ documents.count }}</span>
+                        </h5>
+                        
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                <label class="form-check-label" for="selectAll">
+                                    Tout sélectionner
+                                </label>
+                            </div>
+                            
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="sortBy('confidence')">
+                                    <i class="fas fa-sort-amount-down me-1"></i>Confiance
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="sortBy('priority')">
+                                    <i class="fas fa-exclamation me-1"></i>Priorité
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="sortBy('date')">
+                                    <i class="fas fa-calendar me-1"></i>Date
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if documents %}
+                    {% for document in documents %}
+                    <div class="queue-item" data-document="{{ document.id }}">
+                        <div class="document-preview">
+                            {% if document.thumbnail_url %}
+                            <img src="{{ document.thumbnail_url }}" alt="Aperçu" class="preview-thumbnail">
+                            {% else %}
+                            <div class="preview-thumbnail bg-light d-flex align-items-center justify-content-center">
+                                <i class="fas fa-file-alt text-muted fs-2"></i>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="document-details">
+                                <div class="document-title">
+                                    <div class="form-check me-2">
+                                        <input class="form-check-input document-checkbox" type="checkbox" 
+                                               value="{{ document.id }}" id="doc{{ document.id }}">
+                                    </div>
+                                    {{ document.original_filename }}
+                                    <span class="priority-indicator priority-{{ document.priority|lower }}">
+                                        {% if document.priority == 3 %}Urgente{% elif document.priority == 2 %}Élevée{% else %}Normale{% endif %}
+                                    </span>
+                                </div>
+                                
+                                <div class="document-meta">
+                                    <span><i class="fas fa-layer-group me-1"></i>{{ document.batch.name }}</span>
+                                    <span><i class="fas fa-calendar me-1"></i>{{ document.created_at|date:"d/m/Y H:i" }}</span>
+                                    <span><i class="fas fa-file-alt me-1"></i>{{ document.get_document_type_display }}</span>
+                                    {% if document.metadata.assigned_to %}
+                                    {% with assigned_user=document.get_assigned_user %}
+                                    {% if assigned_user %}
+                                    <span><i class="fas fa-user me-1"></i>{{ assigned_user.get_full_name }}</span>
+                                    {% endif %}
+                                    {% endwith %}
+                                    {% endif %}
+                                </div>
+                                
+                                {% with avg_confidence=document.get_average_confidence %}
+                                <div class="confidence-indicator">
+                                    <span class="text-muted small">Confiance:</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill confidence-{% if avg_confidence >= 90 %}high{% elif avg_confidence >= 70 %}medium{% else %}low{% endif %}" 
+                                             style="width: {{ avg_confidence }}%"></div>
+                                    </div>
+                                    <span class="fw-semibold small">{{ avg_confidence }}%</span>
+                                </div>
+                                {% endwith %}
+                                
+                                <div class="document-actions">
+                                    <a href="{% url 'document_view' document.id %}" class="action-btn primary">
+                                        <i class="fas fa-eye"></i>Valider
+                                    </a>
+                                    
+                                    <button class="action-btn secondary" onclick="previewDocument('{{ document.id }}')">
+                                        <i class="fas fa-search"></i>Aperçu
+                                    </button>
+                                    
+                                    <button class="action-btn secondary" onclick="assignToMe('{{ document.id }}')">
+                                        <i class="fas fa-user-plus"></i>M'assigner
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Actions en lot -->
+                    <div class="bulk-actions" id="bulkActions">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">
+                                <span id="selectedCount">0</span> document(s) sélectionné(s)
+                            </span>
+                            
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-success" onclick="bulkValidate()">
+                                    <i class="fas fa-check me-1"></i>Valider tout
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="bulkFlag()">
+                                    <i class="fas fa-flag me-1"></i>Signaler tout
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="bulkAssign()">
+                                    <i class="fas fa-user-plus me-1"></i>Assigner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                {% else %}
+                    <div class="empty-queue">
+                        <i class="fas fa-check-circle"></i>
+                        <h4 class="fw-bold mb-3">Aucun document en attente</h4>
+                        <p class="mb-4">Tous les documents ont été validés ou aucun ne correspond aux filtres sélectionnés.</p>
+                        <a href="{% url 'batch_upload' %}" class="btn btn-oris-primary">
+                            <i class="fas fa-plus me-2"></i>Créer un nouveau lot
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedDocuments = [];
+    let selectedValidator = null;
+    
+    // Gestion de la sélection
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.document-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        updateSelection();
+    });
+    
+    document.querySelectorAll('.document-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelection);
+    });
+    
+    function updateSelection() {
+        selectedDocuments = Array.from(document.querySelectorAll('.document-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        const bulkActions = document.getElementById('bulkActions');
+        const selectedCount = document.getElementById('selectedCount');
+        const assignBtn = document.getElementById('assignBtn');
+        
+        selectedCount.textContent = selectedDocuments.length;
+        
+        if (selectedDocuments.length > 0) {
+            bulkActions.classList.add('show');
+        } else {
+            bulkActions.classList.remove('show');
+        }
+        
+        assignBtn.disabled = selectedDocuments.length === 0 || !selectedValidator;
+    }
+    
+    // Gestion de la sélection de validateur
+    document.querySelectorAll('.validator-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.validator-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedValidator = this.dataset.validator;
+            
+            const assignBtn = document.getElementById('assignBtn');
+            assignBtn.disabled = selectedDocuments.length === 0 || !selectedValidator;
+        });
+    });
+    
+    // Actions
+    function assignToMe(documentId) {
+        fetch(`/document/${documentId}/assign/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                validator_id: '{{ user.id }}'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification('Document assigné', 'success');
+                location.reload();
+            } else {
+                ORIS.showNotification('Erreur lors de l\'assignation', 'error');
+            }
+        });
+    }
+    
+    function assignSelected() {
+        if (selectedDocuments.length === 0 || !selectedValidator) return;
+        
+        fetch('/documents/bulk-assign/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                document_ids: selectedDocuments,
+                validator_id: selectedValidator
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ORIS.showNotification(`${selectedDocuments.length} document(s) assigné(s)`, 'success');
+                location.reload();
+            } else {
+                ORIS.showNotification('Erreur lors de l\'assignation', 'error');
+            }
+        });
+    }
+    
+    function bulkValidate() {
+        if (selectedDocuments.length === 0) return;
+        
+        if (confirm(`Valider ${selectedDocuments.length} document(s) sans révision ?`)) {
+            fetch('/documents/bulk-validate/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    document_ids: selectedDocuments
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification(`${selectedDocuments.length} document(s) validé(s)`, 'success');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors de la validation', 'error');
+                }
+            });
+        }
+    }
+    
+    function bulkFlag() {
+        if (selectedDocuments.length === 0) return;
+        
+        const reason = prompt('Raison du signalement:');
+        if (reason) {
+            fetch('/documents/bulk-flag/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    document_ids: selectedDocuments,
+                    reason: reason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    ORIS.showNotification(`${selectedDocuments.length} document(s) signalé(s)`, 'warning');
+                    location.reload();
+                } else {
+                    ORIS.showNotification('Erreur lors du signalement', 'error');
+                }
+            });
+        }
+    }
+    
+    function previewDocument(documentId) {
+        // Ouvrir une modal avec aperçu rapide
+        window.open(`/document/${documentId}/preview/`, '_blank', 'width=800,height=600');
+    }
+    
+    function sortBy(criteria) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort', criteria);
+        window.location = url;
+    }
+    
+    function clearFilters() {
+        const form = document.getElementById('filtersForm');
+        form.reset();
+        window.location = window.location.pathname;
+    }
+    
+    function startBulkValidation() {
+        window.location.href = '{% url "validation_queue" %}?mode=bulk';
+    }
+    
+    // Auto-refresh pour les nouveaux documents
+    setInterval(() => {
+        // Vérifier s'il y a de nouveaux documents
+        fetch('/validation/check-new/', {
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.has_new) {
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+                notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                notification.innerHTML = `
+                    Nouveaux documents disponibles pour validation
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-primary" onclick="location.reload()">Actualiser</button>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+            }
+        });
+    }, 60000); // Vérifier toutes les minutes
+</script>
+{% endblock %}
